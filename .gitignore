@@ -1,0 +1,5 @@
+# 実行のたびに生成されるファイル（ソースではないので追跡しない）
+logs/
+dashboard.html
+__pycache__/
+*.pyc

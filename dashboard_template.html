@@ -1,0 +1,753 @@
+<title>株モニタリング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #eef1f0;
+    --surface: #fcfcfb;
+    --surface-2: #e2e6e1;
+    --ink: #14201c;
+    --ink-muted: #5b6b62;
+    --ink-faint: #8a978f;
+    --border: #ccd3cb;
+    --accent: #a9760a;
+    --accent-soft: #f1e6cf;
+    --up: #c23b3b;
+    --up-soft: #f6e2e0;
+    --down: #2f5fa8;
+    --down-soft: #dfe6f2;
+    --shadow: 0 1px 2px rgba(20, 32, 28, 0.06), 0 4px 16px rgba(20, 32, 28, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1a19;
+      --surface: #20221f;
+      --surface-2: #262924;
+      --ink: #e9ece8;
+      --ink-muted: #9aa79f;
+      --ink-faint: #6d7871;
+      --border: #33372f;
+      --accent: #a67c28;
+      --accent-soft: #3a301a;
+      --up: #e2665f;
+      --up-soft: #3a2422;
+      --down: #4f86d0;
+      --down-soft: #1f2b3d;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1a1a19;
+    --surface: #20221f;
+    --surface-2: #262924;
+    --ink: #e9ece8;
+    --ink-muted: #9aa79f;
+    --ink-faint: #6d7871;
+    --border: #33372f;
+    --accent: #a67c28;
+    --accent-soft: #3a301a;
+    --up: #e2665f;
+    --up-soft: #3a2422;
+    --down: #4f86d0;
+    --down-soft: #1f2b3d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 32px clamp(16px, 4vw, 48px) 64px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- header ---------- */
+  header.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  header.page-head h1 {
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 4vw, 38px);
+    letter-spacing: 0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  header.page-head .tagline {
+    color: var(--ink-muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  header.page-head .meta {
+    text-align: right;
+    color: var(--ink-muted);
+    font-size: 12.5px;
+  }
+  header.page-head .meta .stamp {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* ---------- stat tiles ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .stat-tile .label {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .stat-tile .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-tile .value.up { color: var(--up); }
+  .stat-tile .value.down { color: var(--down); }
+  .stat-tile .sub { font-size: 11.5px; color: var(--ink-faint); margin-top: 6px; }
+
+  /* ---------- sections ---------- */
+  section { margin-bottom: 40px; }
+  section > h2 {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin: 0 0 4px;
+  }
+  section > .section-sub {
+    color: var(--ink-muted);
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+
+  .criteria-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--accent-soft);
+    font-weight: 500;
+  }
+
+  /* ---------- filter bar ---------- */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+  }
+  .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .filter-field label {
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+  .filter-field input, .filter-field select {
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 10px;
+    min-width: 0;
+  }
+  .filter-field input[type="number"] { width: 88px; font-family: 'JetBrains Mono', monospace; }
+  .filter-field input[type="text"] { width: 160px; }
+  .filter-field input:focus, .filter-field select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--ink);
+    padding-bottom: 8px;
+  }
+  .filter-checkbox input { width: 16px; height: 16px; accent-color: var(--accent); }
+  #f-reset {
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 14px;
+    cursor: pointer;
+    margin-bottom: 1px;
+  }
+  #f-reset:hover { color: var(--ink); border-color: var(--ink-faint); }
+  #f-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .filter-status {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 18px;
+  }
+  .filter-status b { color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+
+  .bar-row.is-dimmed, circle.point.is-dimmed { opacity: 0.15; }
+  tr.is-filtered-out { display: none; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px 14px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+
+  /* ---------- bar chart ---------- */
+  #bar-chart .bar-row-label {
+    font-size: 11.5px;
+    fill: var(--ink);
+  }
+  #bar-chart .bar-row-sector {
+    font-size: 10px;
+    fill: var(--ink-faint);
+  }
+  #bar-chart .bar-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  #bar-chart .axis-line { stroke: var(--border); stroke-width: 1; }
+  #bar-chart .zero-line { stroke: var(--ink-faint); stroke-width: 1; }
+  #bar-chart rect.bar { cursor: pointer; }
+
+  /* ---------- scatter ---------- */
+  #scatter .grid-line { stroke: var(--border); stroke-width: 1; }
+  #scatter .axis-label { font-size: 11px; fill: var(--ink-muted); }
+  #scatter .axis-title { font-size: 11.5px; fill: var(--ink-muted); font-weight: 500; }
+  #scatter circle.point { cursor: pointer; stroke: var(--surface); stroke-width: 1.5; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ink-muted); }
+  .legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+  /* ---------- tooltip ---------- */
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    line-height: 1.5;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity 0.1s ease;
+    z-index: 20;
+    max-width: 240px;
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip b { font-weight: 700; }
+  #tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+
+  /* ---------- table ---------- */
+  table.stock-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 880px;
+  }
+  table.stock-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.03em;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.stock-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  table.stock-table tbody tr:last-child td { border-bottom: none; }
+  table.stock-table tbody tr.matched { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+  table.stock-table td.num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; text-align: right; }
+  table.stock-table td.num.up { color: var(--up); }
+  table.stock-table td.num.down { color: var(--down); }
+  .name-cell .ticker { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+  .name-cell .name { font-weight: 500; }
+  .sector-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border-radius: 5px;
+    padding: 1px 7px;
+    margin-top: 2px;
+  }
+  .trend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .trend-pill.up { background: var(--up-soft); color: var(--up); }
+  .trend-pill.down { background: var(--down-soft); color: var(--down); }
+  .trend-pill.flat { background: var(--surface-2); color: var(--ink-muted); }
+  .match-badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--surface);
+  }
+
+  footer {
+    color: var(--ink-faint);
+    font-size: 11.5px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    line-height: 1.8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div id="tooltip"></div>
+
+<header class="page-head">
+  <div>
+    <h1>気配板</h1>
+    <div class="tagline">個人ウォッチリスト・スクリーニング・ダッシュボード</div>
+  </div>
+  <div class="meta">
+    <div>最終更新 <span class="stamp mono" id="stamp-generated">—</span></div>
+    <div>平日8:00に自動更新（未起動時は起動後にキャッチアップ）</div>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<div class="filter-bar" id="filter-bar">
+  <div class="filter-field">
+    <label for="f-search">検索</label>
+    <input type="text" id="f-search" placeholder="銘柄名・コード">
+  </div>
+  <div class="filter-field">
+    <label for="f-sector">セクター</label>
+    <select id="f-sector"><option value="">すべて</option></select>
+  </div>
+  <div class="filter-field">
+    <label for="f-trend">トレンド</label>
+    <select id="f-trend">
+      <option value="">すべて</option>
+      <option value="up">上昇のみ</option>
+      <option value="down">下降のみ</option>
+    </select>
+  </div>
+  <div class="filter-field">
+    <label for="f-per">PER上限</label>
+    <input type="number" id="f-per" placeholder="指定なし" min="0" step="0.5">
+  </div>
+  <div class="filter-field">
+    <label for="f-dy">配当利回り下限%</label>
+    <input type="number" id="f-dy" placeholder="指定なし" min="0" step="0.1">
+  </div>
+  <label class="filter-checkbox">
+    <input type="checkbox" id="f-matched-only">
+    スクリーニング条件合致のみ
+  </label>
+  <button type="button" id="f-reset">リセット</button>
+</div>
+<div class="filter-status" id="filter-status"></div>
+
+<section>
+  <h2>前日比</h2>
+  <div class="section-sub">ゼロを起点に、右へ伸びるほど値上がり・左へ伸びるほど値下がり。上のフィルターに合わない銘柄は淡色表示。</div>
+  <div class="panel">
+    <svg id="bar-chart"></svg>
+  </div>
+</section>
+
+<section>
+  <h2>バリュエーション分布</h2>
+  <div class="section-sub">横軸PER（低いほど割安寄り）・縦軸配当利回り。点の色は中長期トレンド（25日・75日移動平均の比較）。フィルターに合わない銘柄は淡色表示。</div>
+  <div class="panel">
+    <svg id="scatter"></svg>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--up)"></span>上昇トレンド</span>
+      <span><span class="swatch" style="background:var(--down)"></span>下降トレンド</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>銘柄一覧</h2>
+  <div class="section-sub">上のフィルターで絞り込み表示。保存済みスクリーニング条件に合致した銘柄には <span class="match-badge">条件合致</span> が付く。</div>
+  <div class="criteria-chips" id="criteria-chips"></div>
+  <div class="panel">
+    <table class="stock-table">
+      <thead>
+        <tr>
+          <th>銘柄</th>
+          <th style="text-align:right">株価</th>
+          <th style="text-align:right">前日比</th>
+          <th>トレンド</th>
+          <th style="text-align:right">PER</th>
+          <th style="text-align:right">配当利回り</th>
+          <th>直近30日</th>
+          <th>判定</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  このページは情報の整理を目的とした個人用ツールであり、投資助言ではありません。データはYahoo Finance由来で遅延・誤差が生じることがあります。<br>
+  ソース: watchlist.py → export_dashboard_data.py → dashboard_template.html（stock-watch プロジェクト）
+</footer>
+
+<script>
+  const DATA = __DASHBOARD_DATA_JSON__;
+
+  const fmt = (n, d = 1) => (n === null || n === undefined) ? "—" : n.toLocaleString("ja-JP", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtPct = (n) => (n === null || n === undefined) ? "—" : (n > 0 ? "+" : "") + n.toFixed(2) + "%";
+  const isUpTrend = (t) => t.startsWith("上昇");
+  const isDownTrend = (t) => t.startsWith("下降");
+
+  document.getElementById("stamp-generated").textContent = DATA.generatedAt.replace("T", " ");
+
+  // ---------- tooltip ----------
+  const tooltipEl = document.getElementById("tooltip");
+  function showTooltip(evt, html) {
+    tooltipEl.innerHTML = html;
+    tooltipEl.style.left = evt.clientX + "px";
+    tooltipEl.style.top = (evt.clientY - 12) + "px";
+    tooltipEl.classList.add("visible");
+  }
+  function moveTooltip(evt) {
+    tooltipEl.style.left = evt.clientX + "px";
+    tooltipEl.style.top = (evt.clientY - 12) + "px";
+  }
+  function hideTooltip() {
+    tooltipEl.classList.remove("visible");
+  }
+
+  // ---------- stat tiles ----------
+  (function renderStats() {
+    const stocks = DATA.stocks;
+    const gainers = stocks.filter(s => s.changePct > 0).length;
+    const losers = stocks.filter(s => s.changePct < 0).length;
+    const avgChange = stocks.reduce((a, s) => a + s.changePct, 0) / stocks.length;
+    const matched = stocks.filter(s => s.matched).length;
+
+    const tiles = [
+      { label: "ウォッチ銘柄数", value: stocks.length, sub: "業種を分散" },
+      { label: "条件合致", value: matched, sub: "現在のスクリーニング基準" },
+      { label: "値上がり / 値下がり", value: `${gainers} / ${losers}`, sub: "前日比" },
+      { label: "平均前日比", value: fmtPct(avgChange), cls: avgChange >= 0 ? "up" : "down", sub: "全" + stocks.length + "銘柄平均" },
+    ];
+
+    document.getElementById("stats").innerHTML = tiles.map(t => `
+      <div class="stat-tile">
+        <div class="label">${t.label}</div>
+        <div class="value ${t.cls || ""} mono">${t.value}</div>
+        <div class="sub">${t.sub}</div>
+      </div>
+    `).join("");
+  })();
+
+  // ---------- criteria chips ----------
+  (function renderCriteria() {
+    const c = DATA.criteria;
+    const chips = [];
+    if (c.max_pe != null) chips.push(`PER ≤ ${c.max_pe}`);
+    if (c.min_dividend_yield != null) chips.push(`配当利回り ≥ ${c.min_dividend_yield}%`);
+    if (c.trend) chips.push(`トレンド: ${c.trend.startsWith("上昇") ? "上昇" : c.trend}`);
+    document.getElementById("criteria-chips").innerHTML = chips.map(c => `<span class="chip">${c}</span>`).join("");
+  })();
+
+  // ---------- diverging bar chart (positions fixed; filter only dims) ----------
+  const barStocks = [...DATA.stocks].sort((a, b) => b.changePct - a.changePct);
+  (function renderBarChart() {
+    const svg = document.getElementById("bar-chart");
+    const stocks = barStocks;
+    const rowH = 26;
+    const padTop = 8, padBottom = 24;
+    const width = 900;
+    const height = stocks.length * rowH + padTop + padBottom;
+    const labelW = 190;
+    const valueW = 64;
+    const plotW = width - labelW - valueW;
+    const plotX0 = labelW;
+    const maxAbs = Math.max(2, ...stocks.map(s => Math.abs(s.changePct))) * 1.08;
+    const midX = plotX0 + plotW / 2;
+    const scale = (plotW / 2) / maxAbs;
+
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", height);
+
+    let parts = "";
+    parts += `<line class="zero-line" x1="${midX}" y1="${padTop}" x2="${midX}" y2="${height - padBottom}" />`;
+
+    stocks.forEach((s, i) => {
+      const y = padTop + i * rowH;
+      const barW = Math.abs(s.changePct) * scale;
+      const up = s.changePct >= 0;
+      const x = up ? midX : midX - barW;
+      const color = up ? "var(--up)" : "var(--down)";
+
+      parts += `<g class="bar-row" data-ticker="${s.ticker}">`;
+      parts += `<text class="bar-row-label" x="${labelW - 12}" y="${y + rowH / 2 + 4}" text-anchor="end">${s.ticker.replace(".T", "")} ${s.name}</text>`;
+      parts += `<rect class="bar" data-ticker="${s.ticker}" x="${x}" y="${y + 5}" width="${Math.max(barW, 1)}" height="${rowH - 10}" rx="3" style="fill:${color}" />`;
+      parts += `<text class="bar-value mono" x="${up ? midX + barW + 8 : midX - barW - 8}" y="${y + rowH / 2 + 4}" text-anchor="${up ? "start" : "end"}" style="fill:${color}">${fmtPct(s.changePct)}</text>`;
+      parts += `</g>`;
+    });
+
+    svg.innerHTML = parts;
+
+    svg.querySelectorAll("rect.bar").forEach(rect => {
+      rect.addEventListener("mousemove", (e) => {
+        const s = stocks.find(x => x.ticker === rect.dataset.ticker);
+        showTooltip(e, `<b>${s.name}</b><br>${s.ticker} ・ ${s.sector}<br>
+          <div class="tt-row"><span>株価</span><span>${fmt(s.price)}</span></div>
+          <div class="tt-row"><span>前日比</span><span>${fmtPct(s.changePct)}</span></div>`);
+      });
+      rect.addEventListener("mouseleave", hideTooltip);
+    });
+  })();
+
+  // ---------- scatter: PER vs dividend yield (positions fixed; filter only dims) ----------
+  const scatterStocks = DATA.stocks.filter(s => s.peRatio != null && s.dividendYield != null);
+  (function renderScatter() {
+    const svg = document.getElementById("scatter");
+    const stocks = scatterStocks;
+    const width = 900, height = 380;
+    const padL = 48, padR = 20, padT = 16, padB = 40;
+    const plotW = width - padL - padR, plotH = height - padT - padB;
+
+    const maxPE = Math.ceil(Math.max(...stocks.map(s => s.peRatio)) / 5) * 5;
+    const maxDY = Math.ceil(Math.max(...stocks.map(s => s.dividendYield)));
+
+    const xScale = (v) => padL + (v / maxPE) * plotW;
+    const yScale = (v) => padT + plotH - (v / maxDY) * plotH;
+
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", height);
+
+    let parts = "";
+    // grid + axis labels (x: PER)
+    for (let v = 0; v <= maxPE; v += 5) {
+      const x = xScale(v);
+      parts += `<line class="grid-line" x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" />`;
+      parts += `<text class="axis-label mono" x="${x}" y="${padT + plotH + 18}" text-anchor="middle">${v}</text>`;
+    }
+    // grid + axis labels (y: dividend yield)
+    for (let v = 0; v <= maxDY; v += 1) {
+      const y = yScale(v);
+      parts += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" />`;
+      parts += `<text class="axis-label mono" x="${padL - 8}" y="${y + 4}" text-anchor="end">${v}%</text>`;
+    }
+    parts += `<text class="axis-title" x="${padL + plotW / 2}" y="${height - 4}" text-anchor="middle">PER（倍）</text>`;
+    parts += `<text class="axis-title" transform="translate(14 ${padT + plotH / 2}) rotate(-90)" text-anchor="middle">配当利回り</text>`;
+
+    stocks.forEach((s) => {
+      const cx = xScale(s.peRatio), cy = yScale(s.dividendYield);
+      const color = isUpTrend(s.trend) ? "var(--up)" : isDownTrend(s.trend) ? "var(--down)" : "var(--ink-faint)";
+      parts += `<circle class="point" data-ticker="${s.ticker}" cx="${cx}" cy="${cy}" r="6" style="fill:${color}" />`;
+    });
+
+    svg.innerHTML = parts;
+
+    svg.querySelectorAll("circle.point").forEach(c => {
+      c.addEventListener("mousemove", (e) => {
+        const s = stocks.find(x => x.ticker === c.dataset.ticker);
+        showTooltip(e, `<b>${s.name}</b><br>${s.ticker} ・ ${s.sector}<br>
+          <div class="tt-row"><span>PER</span><span>${fmt(s.peRatio)}</span></div>
+          <div class="tt-row"><span>配当利回り</span><span>${fmt(s.dividendYield, 2)}%</span></div>
+          <div class="tt-row"><span>トレンド</span><span>${s.trend}</span></div>`);
+      });
+      c.addEventListener("mouseleave", hideTooltip);
+    });
+  })();
+
+  // ---------- sparkline ----------
+  function sparklinePath(history, w, h) {
+    if (!history || history.length < 2) return { d: "", up: true };
+    const min = Math.min(...history), max = Math.max(...history);
+    const range = (max - min) || 1;
+    const stepX = w / (history.length - 1);
+    const points = history.map((v, i) => [i * stepX, h - ((v - min) / range) * h]);
+    const d = points.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    return { d, up: history[history.length - 1] >= history[0] };
+  }
+
+  // ---------- table (re-rendered on every filter change) ----------
+  function renderTable(filteredStocks) {
+    const stocks = [...filteredStocks].sort((a, b) => b.changePct - a.changePct);
+    const body = document.getElementById("table-body");
+
+    if (stocks.length === 0) {
+      body.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--ink-faint); padding:24px;">条件に合う銘柄がありません</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = stocks.map(s => {
+      const trendCls = isUpTrend(s.trend) ? "up" : isDownTrend(s.trend) ? "down" : "flat";
+      const changeCls = s.changePct >= 0 ? "up" : "down";
+      const spark = sparklinePath(s.history, 84, 26);
+      const sparkColor = spark.up ? "var(--up)" : "var(--down)";
+      const reasonsAttr = s.matchReasons.join(" / ");
+
+      return `
+        <tr class="${s.matched ? "matched" : ""}">
+          <td class="name-cell">
+            <div class="ticker">${s.ticker}</div>
+            <div class="name">${s.name}</div>
+            <span class="sector-tag">${s.sector}</span>
+          </td>
+          <td class="num mono">${fmt(s.price)}</td>
+          <td class="num mono ${changeCls}">${fmtPct(s.changePct)}</td>
+          <td><span class="trend-pill ${trendCls}">${s.trend.replace(/\(.+\)/, "")}</span></td>
+          <td class="num mono">${fmt(s.peRatio)}</td>
+          <td class="num mono">${s.dividendYield != null ? fmt(s.dividendYield, 2) + "%" : "—"}</td>
+          <td title="${history_title(s)}">
+            <svg width="84" height="26" viewBox="0 0 84 26">
+              <path d="${spark.d}" fill="none" style="stroke:${sparkColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </td>
+          <td>${s.matched ? `<span class="match-badge" title="${reasonsAttr}">条件合致</span>` : ""}</td>
+        </tr>
+      `;
+    }).join("");
+
+    function history_title(s) {
+      if (!s.history || !s.history.length) return "";
+      return `直近30営業日: ${s.history[0]} → ${s.history[s.history.length - 1]}`;
+    }
+  }
+
+  // ---------- filter bar ----------
+  const sectorSelect = document.getElementById("f-sector");
+  [...new Set(DATA.stocks.map(s => s.sector))].sort().forEach(sector => {
+    const opt = document.createElement("option");
+    opt.value = sector;
+    opt.textContent = sector;
+    sectorSelect.appendChild(opt);
+  });
+
+  const filterEls = {
+    search: document.getElementById("f-search"),
+    sector: document.getElementById("f-sector"),
+    trend: document.getElementById("f-trend"),
+    per: document.getElementById("f-per"),
+    dy: document.getElementById("f-dy"),
+    matchedOnly: document.getElementById("f-matched-only"),
+  };
+
+  function matchesFilter(s) {
+    const q = filterEls.search.value.trim().toLowerCase();
+    if (q && !(s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().includes(q))) return false;
+    if (filterEls.sector.value && s.sector !== filterEls.sector.value) return false;
+    if (filterEls.trend.value === "up" && !isUpTrend(s.trend)) return false;
+    if (filterEls.trend.value === "down" && !isDownTrend(s.trend)) return false;
+    const perLimit = parseFloat(filterEls.per.value);
+    if (!Number.isNaN(perLimit)) {
+      if (s.peRatio == null || s.peRatio > perLimit) return false;
+    }
+    const dyLimit = parseFloat(filterEls.dy.value);
+    if (!Number.isNaN(dyLimit)) {
+      if (s.dividendYield == null || s.dividendYield < dyLimit) return false;
+    }
+    if (filterEls.matchedOnly.checked && !s.matched) return false;
+    return true;
+  }
+
+  function applyFilters() {
+    const filtered = DATA.stocks.filter(matchesFilter);
+    const filteredTickers = new Set(filtered.map(s => s.ticker));
+
+    renderTable(filtered);
+
+    document.querySelectorAll("#bar-chart .bar-row").forEach(g => {
+      g.classList.toggle("is-dimmed", !filteredTickers.has(g.dataset.ticker));
+    });
+    document.querySelectorAll("#scatter circle.point").forEach(c => {
+      c.classList.toggle("is-dimmed", !filteredTickers.has(c.dataset.ticker));
+    });
+
+    const status = document.getElementById("filter-status");
+    status.innerHTML = `<b>${filtered.length}</b> / ${DATA.stocks.length} 銘柄を表示中`;
+  }
+
+  Object.values(filterEls).forEach(el => {
+    el.addEventListener("input", applyFilters);
+    el.addEventListener("change", applyFilters);
+  });
+
+  document.getElementById("f-reset").addEventListener("click", () => {
+    filterEls.search.value = "";
+    filterEls.sector.value = "";
+    filterEls.trend.value = "";
+    filterEls.per.value = "";
+    filterEls.dy.value = "";
+    filterEls.matchedOnly.checked = false;
+    applyFilters();
+  });
+
+  applyFilters();
+</script>
