@@ -1,0 +1,29 @@
+name: Daily LINE News Broadcast
+
+on:
+  schedule:
+    # 22:00 UTC = 7:00 JST (毎日)
+    - cron: "0 22 * * *"
+  workflow_dispatch: {} # Actionsタブから手動実行してテストできるようにする
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: news-line-bot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send news to LINE
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python fetch_news.py
