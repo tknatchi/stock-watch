@@ -1,0 +1,26 @@
+name: Debug Gemini API Key
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  list-models:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List available Gemini models for this key
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
+            | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+if 'models' in data:
+    print('OK: このキーで使えるモデル一覧')
+    for m in data['models']:
+        if 'generateContent' in m.get('supportedGenerationMethods', []):
+            print(' -', m['name'])
+else:
+    print('ERROR RESPONSE:')
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+"
