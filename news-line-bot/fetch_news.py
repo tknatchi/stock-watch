@@ -151,7 +151,8 @@ def build_body(articles, comments):
 
 def build_message(body):
     header = (
-        f"おはよう!今日もネット廃人の私が愛(?)を込めて厳選してきたぜ 生意気ですまんな꙳⸌☆⸍꙳\n"
+        f"おはよう!ネットに引きこもって世間についていけてない、そこのネット廃人のみんなのために、"
+        f"生意気にも今日のニュースを厳選してきてやったぜ꙳⸌☆⸍꙳\n"
         f"📅 今日の重要ニュース TOP{ARTICLE_COUNT}\n\n"
     )
     return header + body
