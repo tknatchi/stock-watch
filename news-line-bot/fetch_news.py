@@ -23,8 +23,10 @@ GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 NEWS_RSS_URL = "https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja"
 ARTICLE_COUNT = 5
 
-# 無料枠で使えるGeminiモデル。将来モデル名が変わった場合はここを更新する。
-GEMINI_MODEL = "gemini-2.5-flash"
+# "-latest"エイリアスを使うことで、個別バージョンが廃止されても自動で新しいFlashモデルに追従させる。
+# もし404になった場合は .github/workflows/debug-gemini.yml (Debug Gemini API Key) を手動実行すると、
+# そのキーで使えるモデル一覧が確認できる。
+GEMINI_MODEL = "gemini-flash-latest"
 GEMINI_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/"
     f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
