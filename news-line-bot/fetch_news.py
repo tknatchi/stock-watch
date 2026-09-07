@@ -1,7 +1,10 @@
 """
 毎朝7時(JST)に、Googleニュースのトップストーリーを取得し、
 Gemini(無料枠)でカテゴリ・解説コメントを生成したうえで、
-LINE公式アカウントの友だち一人ひとりに、名前入りでpush配信するスクリプト。
+LINE公式アカウントの友だち全員にbroadcast配信するスクリプト。
+
+(友だち追加時の「あいさつメッセージ」での名前差し込みはLINE Official Account Manager側の
+標準機能でそのまま使えるので、こちらのスクリプトでは扱わない。日々の自動配信は名前なし)
 
 必要な環境変数:
   LINE_CHANNEL_ACCESS_TOKEN : LINE Messaging APIのチャンネルアクセストークン(長期)
@@ -13,7 +16,6 @@ import re
 import json
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone, timedelta
 
 import requests
 
@@ -135,62 +137,26 @@ def build_body(articles, comments):
     return "\n\n".join(blocks)
 
 
-def build_message(display_name, body):
+def build_message(body):
     header = (
-        f"おはよう!{display_name}が起きてくる頃には、"
-        f"ネット廃人の私はもう今日のニュースを{ARTICLE_COUNT}本厳選し終わってたよ 生意気ですまんな꙳⸌☆⸍꙳\n"
+        f"おはよう!今日もネット廃人の私が愛(?)を込めて厳選してきたぜ 生意気ですまんな꙳⸌☆⸍꙳\n"
         f"📅 今日の重要ニュース TOP{ARTICLE_COUNT}\n\n"
     )
     return header + body
 
 
-def get_all_follower_ids():
-    """友だち全員のuserIdを取得する(継続トークンでページング)。"""
-    ids = []
-    cursor = None
-    headers = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
-    while True:
-        params = {"limit": 1000}
-        if cursor:
-            params["start"] = cursor
-        resp = requests.get(
-            "https://api.line.me/v2/bot/followers/ids",
-            headers=headers,
-            params=params,
-            timeout=20,
-        )
-        if not resp.ok:
-            print(f"[LINE followers/ids] {resp.status_code}: {resp.text[:1000]}")
-        resp.raise_for_status()
-        data = resp.json()
-        ids.extend(data.get("userIds", []))
-        cursor = data.get("next")
-        if not cursor:
-            break
-    return ids
-
-
-def get_display_name(user_id):
-    headers = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
-    resp = requests.get(
-        f"https://api.line.me/v2/bot/profile/{user_id}", headers=headers, timeout=20
-    )
-    if resp.status_code != 200:
-        return None
-    return resp.json().get("displayName")
-
-
-def push_message(user_id, text):
+def broadcast_message(text):
     headers = {
         "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
         "Content-Type": "application/json",
     }
-    body = {"to": user_id, "messages": [{"type": "text", "text": text}]}
+    body = {"messages": [{"type": "text", "text": text}]}
     resp = requests.post(
-        "https://api.line.me/v2/bot/message/push", headers=headers, json=body, timeout=20
+        "https://api.line.me/v2/bot/message/broadcast", headers=headers, json=body, timeout=20
     )
-    if resp.status_code != 200:
-        print(f"[WARN] push failed for {user_id}: {resp.status_code} {resp.text}")
+    if not resp.ok:
+        print(f"[LINE broadcast] {resp.status_code}: {resp.text[:1000]}")
+    resp.raise_for_status()
 
 
 def main():
@@ -201,23 +167,10 @@ def main():
 
     comments = call_gemini(build_gemini_prompt(articles))
     body = build_body(articles, comments)
+    text = build_message(body)
 
-    follower_ids = get_all_follower_ids()
-    print(f"{len(follower_ids)} 人の友だちに配信します。")
-
-    sent, failed = 0, 0
-    for uid in follower_ids:
-        name = get_display_name(uid) or "あなた"
-        text = build_message(name, body)
-        try:
-            push_message(uid, text)
-            sent += 1
-        except requests.RequestException as e:
-            print(f"[ERROR] {uid}: {e}")
-            failed += 1
-        time.sleep(0.1)  # レート制限対策の軽いウェイト
-
-    print(f"完了: 成功 {sent} 件 / 失敗 {failed} 件")
+    broadcast_message(text)
+    print("配信完了")
 
 
 if __name__ == "__main__":
