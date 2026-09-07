@@ -159,6 +159,8 @@ def get_all_follower_ids():
             params=params,
             timeout=20,
         )
+        if not resp.ok:
+            print(f"[LINE followers/ids] {resp.status_code}: {resp.text[:1000]}")
         resp.raise_for_status()
         data = resp.json()
         ids.extend(data.get("userIds", []))
