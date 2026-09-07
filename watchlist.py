@@ -8,6 +8,8 @@
     1. WATCHLIST に書いた銘柄コードの現在値・前日比・出来高を取得
     2. 25日/75日移動平均を計算してトレンドをざっくり判定
     3. PER・配当利回りなど基本指標を表示
+    4. RSI・MACD・ボリンジャーバンドを計算し(indicators.py)、
+       それらとPER・配当利回り・トレンドを合成した0〜100の「買いスコア」を表示(scoring.py)
 
 銘柄コードの書き方:
     日本株  : "7203.T" (トヨタ), "6758.T" (ソニーG), "9984.T" (ソフトバンクG)
@@ -29,6 +31,8 @@ import pandas as pd
 import yfinance as yf
 
 import console_utf8
+from indicators import calc_bollinger, calc_macd, calc_rsi
+from scoring import compute_buy_score
 
 console_utf8.setup()
 
@@ -120,6 +124,13 @@ class StockSnapshot:
     pe_ratio: float | None
     dividend_yield: float | None
     history: list[float]  # 直近30営業日の終値（スパークライン用）
+    rsi14: float | None
+    macd: float | None
+    macd_signal: float | None
+    macd_hist: float | None
+    bb_pct: float | None  # ボリンジャーバンド内の位置(0=下限, 1=上限)
+    buy_score: int = 0  # 0〜100の買いスコア（ヒューリスティック。投資助言ではない）
+    score_reasons: list[str] = None  # type: ignore[assignment]
 
 
 def fetch_snapshot(ticker: str) -> StockSnapshot | None:
@@ -155,7 +166,24 @@ def fetch_snapshot(ticker: str) -> StockSnapshot | None:
     dividend_yield = info.get("dividendYield")
     history = [round(float(v), 1) for v in hist["Close"].tail(30).tolist()]
 
-    return StockSnapshot(
+    closes = hist["Close"]
+
+    def _last_or_none(series: pd.Series) -> float | None:
+        v = series.iloc[-1]
+        return None if pd.isna(v) else float(v)
+
+    rsi14 = _last_or_none(calc_rsi(closes))
+    macd_line, macd_signal_line, macd_hist_line = calc_macd(closes)
+    macd = _last_or_none(macd_line)
+    macd_signal = _last_or_none(macd_signal_line)
+    macd_hist = _last_or_none(macd_hist_line)
+
+    bb_upper, bb_lower, _bb_mid = calc_bollinger(closes)
+    bb_u = _last_or_none(bb_upper)
+    bb_l = _last_or_none(bb_lower)
+    bb_pct = (price - bb_l) / (bb_u - bb_l) if bb_u is not None and bb_l is not None and bb_u != bb_l else None
+
+    snapshot = StockSnapshot(
         ticker=ticker,
         name=name,
         sector=SECTORS.get(ticker, "その他"),
@@ -169,7 +197,14 @@ def fetch_snapshot(ticker: str) -> StockSnapshot | None:
         pe_ratio=pe_ratio,
         dividend_yield=dividend_yield,
         history=history,
+        rsi14=rsi14,
+        macd=macd,
+        macd_signal=macd_signal,
+        macd_hist=macd_hist,
+        bb_pct=bb_pct,
     )
+    snapshot.buy_score, snapshot.score_reasons = compute_buy_score(snapshot)
+    return snapshot
 
 
 def build_table(snapshots: list[StockSnapshot]) -> pd.DataFrame:
@@ -186,6 +221,8 @@ def build_table(snapshots: list[StockSnapshot]) -> pd.DataFrame:
                 "トレンド": s.trend,
                 "PER": round(s.pe_ratio, 1) if s.pe_ratio else None,
                 "配当利回り%": round(s.dividend_yield, 2) if s.dividend_yield else None,
+                "RSI": round(s.rsi14, 0) if s.rsi14 is not None else None,
+                "買いスコア": s.buy_score,
             }
         )
     return pd.DataFrame(rows)

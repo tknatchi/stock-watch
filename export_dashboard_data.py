@@ -51,6 +51,11 @@ def main() -> None:
                 "history": s.history,
                 "matched": matched,
                 "matchReasons": reasons,
+                "rsi14": round(s.rsi14, 1) if s.rsi14 is not None else None,
+                "macdHist": round(s.macd_hist, 2) if s.macd_hist is not None else None,
+                "bbPct": round(s.bb_pct, 3) if s.bb_pct is not None else None,
+                "buyScore": s.buy_score,
+                "scoreReasons": s.score_reasons,
             }
         )
 

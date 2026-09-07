@@ -350,6 +350,69 @@
     color: var(--surface);
   }
 
+  /* ---------- 買いスコア ---------- */
+  .score-cell { display: flex; align-items: baseline; justify-content: flex-end; gap: 4px; }
+  .score-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; }
+  .score-value.tier-high { color: var(--up); }
+  .score-value.tier-mid { color: var(--ink-muted); }
+  .score-value.tier-low { color: var(--down); }
+  .score-max { font-size: 10px; color: var(--ink-faint); }
+
+  .candidate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+  }
+  .candidate-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .candidate-card .cc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .candidate-card .cc-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .candidate-card .cc-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: right;
+  }
+  .candidate-card .cc-score-sub {
+    font-size: 10px;
+    color: var(--ink-muted);
+    text-align: right;
+    margin-top: 2px;
+  }
+  .candidate-card .cc-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+  }
+  .candidate-reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .reason-chip {
+    font-size: 10.5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
   footer {
     color: var(--ink-faint);
     font-size: 11.5px;
@@ -377,6 +440,15 @@
 </header>
 
 <div class="stats" id="stats"></div>
+
+<section>
+  <h2>本日の買い候補 Top5</h2>
+  <div class="section-sub">
+    PER・配当利回り・中長期トレンド・RSI・MACD・ボリンジャーバンドを重み付け合成した0〜100の「買いスコア」上位5銘柄。
+    複数指標を機械的に合成したヒューリスティックであり、投資助言ではありません。
+  </div>
+  <div class="candidate-grid" id="candidate-grid"></div>
+</section>
 
 <div class="filter-bar" id="filter-bar">
   <div class="filter-field">
@@ -445,6 +517,7 @@
           <th>トレンド</th>
           <th style="text-align:right">PER</th>
           <th style="text-align:right">配当利回り</th>
+          <th style="text-align:right">買いスコア</th>
           <th>直近30日</th>
           <th>判定</th>
         </tr>
@@ -456,6 +529,7 @@
 
 <footer>
   このページは情報の整理を目的とした個人用ツールであり、投資助言ではありません。データはYahoo Finance由来で遅延・誤差が生じることがあります。<br>
+  「買いスコア」はPER・配当利回り・トレンド・RSI・MACD・ボリンジャーバンドを機械的に重み付け合成したヒューリスティックであり、将来の値動きを予測・保証するものではありません。<br>
   ソース: watchlist.py → export_dashboard_data.py → dashboard_template.html（stock-watch プロジェクト）
 </footer>
 
@@ -466,6 +540,8 @@
   const fmtPct = (n) => (n === null || n === undefined) ? "—" : (n > 0 ? "+" : "") + n.toFixed(2) + "%";
   const isUpTrend = (t) => t.startsWith("上昇");
   const isDownTrend = (t) => t.startsWith("下降");
+  const scoreTier = (score) => score >= 70 ? "high" : score <= 35 ? "low" : "mid";
+  const scoreTierLabel = { high: "買い候補", mid: "中立", low: "様子見" };
 
   document.getElementById("stamp-generated").textContent = DATA.generatedAt.replace("T", " ");
 
@@ -517,6 +593,37 @@
     if (c.min_dividend_yield != null) chips.push(`配当利回り ≥ ${c.min_dividend_yield}%`);
     if (c.trend) chips.push(`トレンド: ${c.trend.startsWith("上昇") ? "上昇" : c.trend}`);
     document.getElementById("criteria-chips").innerHTML = chips.map(c => `<span class="chip">${c}</span>`).join("");
+  })();
+
+  // ---------- 本日の買い候補 Top5 ----------
+  (function renderCandidates() {
+    const top = [...DATA.stocks].sort((a, b) => b.buyScore - a.buyScore).slice(0, 5);
+    const grid = document.getElementById("candidate-grid");
+
+    grid.innerHTML = top.map((s, i) => {
+      const tier = scoreTier(s.buyScore);
+      const changeCls = s.changePct >= 0 ? "up" : "down";
+      const reasons = (s.scoreReasons || []).map(r => `<span class="reason-chip">${r}</span>`).join("");
+      return `
+        <div class="candidate-card">
+          <div class="cc-head">
+            <div>
+              <div class="cc-rank">#${i + 1} ・ ${s.sector}</div>
+              <div class="name-cell"><div class="ticker">${s.ticker}</div><div class="name">${s.name}</div></div>
+            </div>
+            <div>
+              <div class="cc-score score-value tier-${tier}">${s.buyScore}</div>
+              <div class="cc-score-sub">${scoreTierLabel[tier]}</div>
+            </div>
+          </div>
+          <div class="cc-price-row">
+            <span class="mono">${fmt(s.price)}</span>
+            <span class="mono ${changeCls}">${fmtPct(s.changePct)}</span>
+          </div>
+          <div class="candidate-reasons">${reasons}</div>
+        </div>
+      `;
+    }).join("");
   })();
 
   // ---------- diverging bar chart (positions fixed; filter only dims) ----------
@@ -642,7 +749,7 @@
     const body = document.getElementById("table-body");
 
     if (stocks.length === 0) {
-      body.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--ink-faint); padding:24px;">条件に合う銘柄がありません</td></tr>`;
+      body.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--ink-faint); padding:24px;">条件に合う銘柄がありません</td></tr>`;
       return;
     }
 
@@ -652,6 +759,8 @@
       const spark = sparklinePath(s.history, 84, 26);
       const sparkColor = spark.up ? "var(--up)" : "var(--down)";
       const reasonsAttr = s.matchReasons.join(" / ");
+      const scoreReasonsAttr = (s.scoreReasons || []).join(" / ");
+      const scoreTierCls = scoreTier(s.buyScore);
 
       return `
         <tr class="${s.matched ? "matched" : ""}">
@@ -665,6 +774,9 @@
           <td><span class="trend-pill ${trendCls}">${s.trend.replace(/\(.+\)/, "")}</span></td>
           <td class="num mono">${fmt(s.peRatio)}</td>
           <td class="num mono">${s.dividendYield != null ? fmt(s.dividendYield, 2) + "%" : "—"}</td>
+          <td class="num" title="${scoreReasonsAttr}">
+            <span class="score-cell"><span class="score-value tier-${scoreTierCls}">${s.buyScore}</span><span class="score-max">/100</span></span>
+          </td>
           <td title="${history_title(s)}">
             <svg width="84" height="26" viewBox="0 0 84 26">
               <path d="${spark.d}" fill="none" style="stroke:${sparkColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
