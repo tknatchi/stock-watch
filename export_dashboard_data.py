@@ -10,19 +10,40 @@
 
     このJSONの中身を dashboard.html にそのまま埋め込むことで、
     「今日のダッシュボード」を自動更新できる。
+
+    theme_candidates.json (theme_research.py が週次で生成)が存在すれば、
+    「今週の注目テーマ」としてあわせて埋め込む。無ければテーマ欄は省略される。
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import json
+from pathlib import Path
 
 import console_utf8
 
 console_utf8.setup()
 
 from screen import CRITERIA, passes
-from watchlist import LOG_DIR, WATCHLIST, fetch_snapshot
+from watchlist import JAPANESE_NAMES, LOG_DIR, WATCHLIST, fetch_snapshot
+
+BASE_DIR = Path(__file__).resolve().parent
+THEME_CANDIDATES_PATH = BASE_DIR / "theme_candidates.json"
+
+
+def load_themes(known_names: set[str]) -> dict | None:
+    """theme_research.py(週次のGitHub Actions)が生成した候補を読み込む。
+
+    ファイルが無ければ何もしない(まだ一度も実行されていない場合など)。
+    """
+    if not THEME_CANDIDATES_PATH.exists():
+        return None
+    data = json.loads(THEME_CANDIDATES_PATH.read_text(encoding="utf-8"))
+    for theme in data.get("themes", []):
+        for c in theme.get("candidates", []):
+            c["inWatchlist"] = c.get("name") in known_names
+    return data
 
 
 def main() -> None:
@@ -59,10 +80,14 @@ def main() -> None:
             }
         )
 
+    known_names = {JAPANESE_NAMES.get(t, t) for t in WATCHLIST} | {s["name"] for s in stocks}
+    themes = load_themes(known_names)
+
     data = {
         "generatedAt": now.isoformat(timespec="minutes"),
         "criteria": CRITERIA,
         "stocks": stocks,
+        "themes": themes,
     }
 
     LOG_DIR.mkdir(exist_ok=True)

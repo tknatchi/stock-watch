@@ -413,6 +413,46 @@
     line-height: 1.5;
   }
 
+  /* ---------- 今週の注目テーマ ---------- */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .theme-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .theme-name {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+  .theme-summary {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+  .theme-candidates { display: flex; flex-wrap: wrap; gap: 6px; }
+  .theme-chip {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+  }
+  .theme-chip.is-new {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
   footer {
     color: var(--ink-faint);
     font-size: 11.5px;
@@ -448,6 +488,15 @@
     複数指標を機械的に合成したヒューリスティックであり、投資助言ではありません。
   </div>
   <div class="candidate-grid" id="candidate-grid"></div>
+</section>
+
+<section id="theme-section" style="display:none">
+  <h2>今週の注目テーマ</h2>
+  <div class="section-sub">
+    直近の市場ニュースからGeminiが抽出した、注目度が上がっているテーマと関連企業（週次更新・<span id="theme-updated"></span>時点）。
+    <span class="theme-chip is-new" style="padding:1px 7px">未収録</span> はウォッチリスト外の企業。証券コードは未確認のため、追加する際は自分で確認してください。
+  </div>
+  <div class="theme-grid" id="theme-grid"></div>
 </section>
 
 <div class="filter-bar" id="filter-bar">
@@ -621,6 +670,31 @@
             <span class="mono ${changeCls}">${fmtPct(s.changePct)}</span>
           </div>
           <div class="candidate-reasons">${reasons}</div>
+        </div>
+      `;
+    }).join("");
+  })();
+
+  // ---------- 今週の注目テーマ ----------
+  (function renderThemes() {
+    const themes = DATA.themes;
+    if (!themes || !themes.themes || themes.themes.length === 0) return;
+
+    document.getElementById("theme-section").style.display = "";
+    document.getElementById("theme-updated").textContent = (themes.generatedAt || "").replace("T", " ");
+
+    const grid = document.getElementById("theme-grid");
+    grid.innerHTML = themes.themes.map(t => {
+      const chips = (t.candidates || []).map(c => {
+        const cls = c.inWatchlist ? "" : "is-new";
+        const label = c.inWatchlist ? c.name : `${c.name}（未収録）`;
+        return `<span class="theme-chip ${cls}" title="${c.note || ""}">${label}</span>`;
+      }).join("");
+      return `
+        <div class="theme-card">
+          <div class="theme-name">${t.theme}</div>
+          <div class="theme-summary">${t.summary || ""}</div>
+          <div class="theme-candidates">${chips}</div>
         </div>
       `;
     }).join("");
