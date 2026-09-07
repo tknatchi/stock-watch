@@ -99,8 +99,18 @@ def call_gemini(prompt, max_retries=6):
     }
 
     last_resp = None
+    last_exc = None
     for attempt in range(max_retries):
-        resp = requests.post(GEMINI_URL, headers=headers, json=body, timeout=60)
+        try:
+            resp = requests.post(GEMINI_URL, headers=headers, json=body, timeout=90)
+        except requests.exceptions.RequestException as e:
+            # タイムアウトや接続エラーなど、レスポンス自体が返ってこないケースもリトライする
+            wait = min(2 ** attempt, 30)
+            print(f"[WARN] Gemini通信エラー({e.__class__.__name__})、{wait}秒待って再試行します ({attempt + 1}/{max_retries})")
+            last_exc = e
+            time.sleep(wait)
+            continue
+
         if resp.ok:
             data = resp.json()
             break
@@ -118,7 +128,9 @@ def call_gemini(prompt, max_retries=6):
 
         resp.raise_for_status()  # 429/503以外は即エラーにする
     else:
-        last_resp.raise_for_status()  # 全部失敗したら最後のエラーを投げる
+        if last_resp is not None:
+            last_resp.raise_for_status()  # 全部失敗したら最後のエラーを投げる
+        raise last_exc  # 最後まで通信エラーだった場合
     text = data["candidates"][0]["content"]["parts"][0]["text"]
     return json.loads(text)
 
