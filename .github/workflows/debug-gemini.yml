@@ -6,21 +6,20 @@ on:
 jobs:
   list-models:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: news-line-bot
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: List available Gemini models for this key
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
-            | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-if 'models' in data:
-    print('OK: このキーで使えるモデル一覧')
-    for m in data['models']:
-        if 'generateContent' in m.get('supportedGenerationMethods', []):
-            print(' -', m['name'])
-else:
-    print('ERROR RESPONSE:')
-    print(json.dumps(data, ensure_ascii=False, indent=2))
-"
+        run: python list_gemini_models.py
