@@ -99,3 +99,40 @@ def compute_buy_score(s: "StockSnapshot") -> tuple[int, list[str]]:
         reasons.append("突出した根拠はなく、各指標とも中庸")
 
     return score, reasons
+
+
+def compute_target_weights(
+    snapshots: list["StockSnapshot"], min_score: int = 45, max_weight: float = 0.15
+) -> dict[str, float]:
+    """買いスコアをもとにした目標配分比率(銘柄コード→0〜1、合計1.0)を計算する。
+
+    やっていること:
+        - min_score未満の銘柄は対象外（比率0）とし、新規の投資対象から除外する
+        - 残った銘柄はスコアの大きさに比例して配分する
+        - 1銘柄への集中を避けるため、比率がmax_weightを超える銘柄は上限でキャップし、
+          超過分を他の銘柄へ再配分する（数回の反復で収束させる簡易ウォーターフィリング）
+
+    月次リバランスなど、rebalance.py から呼ばれる想定。
+    """
+    eligible = {s.ticker: s.buy_score for s in snapshots if s.buy_score >= min_score}
+    if not eligible:
+        return {}
+
+    total = sum(eligible.values())
+    weights = {t: sc / total for t, sc in eligible.items()}
+
+    for _ in range(10):
+        over = {t: w for t, w in weights.items() if w > max_weight + 1e-9}
+        if not over:
+            break
+        excess = sum(w - max_weight for w in over.values())
+        for t in over:
+            weights[t] = max_weight
+        under = {t: w for t, w in weights.items() if t not in over}
+        under_total = sum(under.values())
+        if under_total <= 0:
+            break
+        for t in under:
+            weights[t] += excess * (under[t] / under_total)
+
+    return weights
