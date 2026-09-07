@@ -23,14 +23,13 @@ GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 NEWS_RSS_URL = "https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja"
 ARTICLE_COUNT = 5
 
-# "-latest"エイリアスを使うことで、個別バージョンが廃止されても自動で新しいFlashモデルに追従させる。
-# もし404になった場合は .github/workflows/debug-gemini.yml (Debug Gemini API Key) を手動実行すると、
+# モデルのバージョンは明示的に固定する("-latest"エイリアスは無料枠での混雑(503)が起きやすいため避ける)。
+# gemini-2.5系は「過去に利用実績のある既存ユーザー限定」で新規プロジェクトからは404になる仕様のため、
+# 新規プロジェクトでも使える3.x系を指定している。
+# もし404/503になった場合は .github/workflows/debug-gemini.yml (Debug Gemini API Key) を手動実行すると、
 # そのキーで使えるモデル一覧が確認できる。
-GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/"
-    f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-)
+GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
 
@@ -86,30 +85,38 @@ def build_gemini_prompt(articles):
 """
 
 
-def call_gemini(prompt, max_retries=4):
+def call_gemini(prompt, max_retries=6):
+    # APIキーはヘッダーで渡す(?key=クエリはログやURL履歴に残りやすいため避ける)。
+    headers = {"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"}
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": 0.9,
             "responseMimeType": "application/json",
+            # temperatureは指定しない(Gemini 3系はデフォルトのままの方が安定するため)
         },
     }
 
-    last_error = None
+    last_resp = None
     for attempt in range(max_retries):
-        resp = requests.post(GEMINI_URL, json=body, timeout=60)
-        # 503(混雑)・429(レート制限)は無料枠でよく起きる一時的なエラーなので、待ってリトライする
+        resp = requests.post(GEMINI_URL, headers=headers, json=body, timeout=60)
+        if resp.ok:
+            data = resp.json()
+            break
+
+        # 何が起きているか必ずログに残す(raise_for_statusだけだと理由の本文が消えてしまうため)
+        print(f"[Gemini] {resp.status_code}: {resp.text[:1000]}")
+
         if resp.status_code in (429, 503):
-            wait = 2 ** attempt  # 1, 2, 4, 8秒と待ち時間を伸ばす
-            print(f"[WARN] Gemini {resp.status_code}、{wait}秒待って再試行します ({attempt + 1}/{max_retries})")
-            last_error = resp
+            # 無料枠でよく起きる一時的なエラーなので、待ってリトライする
+            wait = min(2 ** attempt, 30)  # 1, 2, 4, 8, 16, 30秒と待ち時間を伸ばす
+            print(f"[WARN] {wait}秒待って再試行します ({attempt + 1}/{max_retries})")
+            last_resp = resp
             time.sleep(wait)
             continue
-        resp.raise_for_status()
-        data = resp.json()
-        break
+
+        resp.raise_for_status()  # 429/503以外は即エラーにする
     else:
-        last_error.raise_for_status()  # 全部失敗したら最後のエラーを投げる
+        last_resp.raise_for_status()  # 全部失敗したら最後のエラーを投げる
     text = data["candidates"][0]["content"]["parts"][0]["text"]
     return json.loads(text)
 
