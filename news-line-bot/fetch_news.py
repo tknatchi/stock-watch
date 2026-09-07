@@ -86,7 +86,7 @@ def build_gemini_prompt(articles):
 """
 
 
-def call_gemini(prompt):
+def call_gemini(prompt, max_retries=4):
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -94,9 +94,22 @@ def call_gemini(prompt):
             "responseMimeType": "application/json",
         },
     }
-    resp = requests.post(GEMINI_URL, json=body, timeout=60)
-    resp.raise_for_status()
-    data = resp.json()
+
+    last_error = None
+    for attempt in range(max_retries):
+        resp = requests.post(GEMINI_URL, json=body, timeout=60)
+        # 503(混雑)・429(レート制限)は無料枠でよく起きる一時的なエラーなので、待ってリトライする
+        if resp.status_code in (429, 503):
+            wait = 2 ** attempt  # 1, 2, 4, 8秒と待ち時間を伸ばす
+            print(f"[WARN] Gemini {resp.status_code}、{wait}秒待って再試行します ({attempt + 1}/{max_retries})")
+            last_error = resp
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        data = resp.json()
+        break
+    else:
+        last_error.raise_for_status()  # 全部失敗したら最後のエラーを投げる
     text = data["candidates"][0]["content"]["parts"][0]["text"]
     return json.loads(text)
 
