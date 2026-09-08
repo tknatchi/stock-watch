@@ -19,6 +19,14 @@
     銘柄ごとに「現在の評価額」と「目標評価額」を比較し、そのズレが
     ポートフォリオ全体に対してDRIFT_THRESHOLD以上ある銘柄だけ、売買を提案する。
     小さなズレでは何も提案しない（ノイズで売買しないようにするため）。
+
+買い付けの割り当てロジック(greedy_lot_allocation)について:
+    銘柄ごとに独立して「目標評価額 ÷ 株価」を単元株数に丸めると、予算が小さい場合に
+    ほぼ全銘柄が「1単元にも届かない」判定になり、実質何も買えなくなる
+    (例: 30万円を15銘柄に分散すると1銘柄あたり2万円程度になるが、値がさ株は1単元30万円超のため)。
+    これを避けるため、買いはスコアの高い銘柄から順に「使えるお金の範囲で1単元ずつ」割り当てる
+    貪欲法(greedy)にしている。個別銘柄の目標額(上限)より小さい額しか使えない場合でも、
+    最初の1単元だけは(予算が許す限り)買うことを許可し、2単元目以降は上限を守る。
 """
 
 from __future__ import annotations
@@ -41,8 +49,50 @@ PORTFOLIO_PATH = BASE_DIR / "portfolio.json"
 MIN_SCORE = 45          # この買いスコア未満の銘柄は新規の投資対象から除外
 MAX_WEIGHT = 0.15       # 1銘柄への集中を防ぐ上限比率（15%）
 DRIFT_THRESHOLD = 0.02  # 目標比率からのズレがポートフォリオ全体比でこれを超えたら売買提案
-LOT_SIZE = 100          # 単元株数（東証は原則100株単位）
+
+# 単元株数。通常の取引(東証は原則100株単位)を使うなら100のまま。
+# 単元未満株(ミニ株式・S株など、1株単位で売買できるサービス。SBI証券・楽天証券・
+# マネックス証券などが対応)を使うなら1にする。
+#
+# 100のままだと、少額予算では「1単元の値段がそもそも目標配分額を大きく超える」
+# 銘柄ばかりになり、買った直後に集中上限(MAX_WEIGHT)超過を理由に売り戻しを
+# 提案する、といった矛盾が起きやすい。単元未満株を使うなら1にすることでこの
+# 矛盾は解消する(目標比率どおりの細かい金額で売買できるため)。
+LOT_SIZE = 1
 # ===========================================
+
+
+def greedy_lot_allocation(
+    candidates: list[dict], available_cash: float, lot_size: int
+) -> tuple[dict[str, int], float]:
+    """買い候補にスコア優先で単元株を割り当てる。
+
+    candidates の各要素は {"ticker", "price", "score", "current_value", "cap"}。
+    cap(目標評価額)より1単元のコストの方が高い銘柄でも、最初の1単元だけは
+    (予算が許せば)買うことを許可する。2単元目以降はcapを超えない範囲に制限する。
+    これにより、少額予算で目標額が小さい銘柄ばかりになっても「何も買えない」状態を避ける。
+
+    戻り値: (ticker → 追加で買う株数, 残余現金)
+    """
+    additional_shares = {c["ticker"]: 0 for c in candidates}
+    cash = available_cash
+
+    for c in sorted(candidates, key=lambda c: -c["score"]):
+        lot_cost = c["price"] * lot_size
+        if lot_cost <= 0 or lot_cost > cash:
+            continue
+
+        additional_shares[c["ticker"]] += lot_size  # 最初の1単元は無条件で許可
+        cash -= lot_cost
+
+        while True:
+            held_value = c["current_value"] + (additional_shares[c["ticker"]] + lot_size) * c["price"]
+            if held_value > c["cap"] or lot_cost > cash:
+                break
+            additional_shares[c["ticker"]] += lot_size
+            cash -= lot_cost
+
+    return additional_shares, cash
 
 
 def load_portfolio() -> dict:
@@ -92,7 +142,10 @@ def main() -> None:
         emit("現金・保有評価額がともに0円のため計算できません。portfolio.json を確認してください。")
         return
 
-    rows = []
+    rows = {}
+    buy_candidates = []
+    freed_cash = 0.0
+
     for s in snapshots:
         current_shares = holdings.get(s.ticker, 0)
         current_value = current_shares * s.price
@@ -104,32 +157,52 @@ def main() -> None:
         if current_shares == 0 and target_weight == 0:
             continue  # 保有なし・新規対象外の銘柄は表示しない
 
-        action_shares = 0
-        if abs(drift_ratio) >= DRIFT_THRESHOLD:
-            # 0方向へ切り捨て（trunc）。四捨五入だと目標額を超えて買い越し／売り越しになり、
-            # 銘柄数が多いと現金残高がマイナスになりうるため、常に目標のズレの範囲内に収める。
-            lots = math.trunc(drift_value / s.price / LOT_SIZE)
-            action_shares = lots * LOT_SIZE
-            if action_shares < 0:
-                action_shares = max(action_shares, -current_shares)  # 保有以上には売らない
+        row = {
+            "ticker": s.ticker,
+            "name": s.name,
+            "score": s.buy_score,
+            "price": s.price,
+            "current_shares": current_shares,
+            "current_value": current_value,
+            "target_weight": target_weight,
+            "target_value": target_value,
+            "action_shares": 0,
+        }
+        rows[s.ticker] = row
 
-        rows.append(
-            {
-                "ticker": s.ticker,
-                "name": s.name,
-                "score": s.buy_score,
-                "price": s.price,
-                "current_shares": current_shares,
-                "current_value": current_value,
-                "target_weight": target_weight,
-                "target_value": target_value,
-                "action_shares": action_shares,
-            }
-        )
+        if abs(drift_ratio) < DRIFT_THRESHOLD:
+            continue
 
-    rows.sort(key=lambda r: (-r["target_weight"], -r["current_value"]))
+        if drift_value < 0:
+            # 売り: 「目標評価額を超えない最大の単元数」を直接計算して、そこまで減らす。
+            # (差額 ÷ 株価 ÷ 単元 を切り捨てる方式だと、1単元の価値自体が目標額を
+            #  大きく超える銘柄で「差額が1単元未満」に丸まり、大幅な超過保有でも
+            #  売却提案が出ない不具合があったため)
+            # 他銘柄と現金を取り合わないので、これまで通り単独で決めてよい。
+            target_lots = math.floor(target_value / s.price / LOT_SIZE)
+            action_shares = target_lots * LOT_SIZE - current_shares
+            row["action_shares"] = action_shares
+            freed_cash += -action_shares * s.price
+        else:
+            # 買い: 複数銘柄で現金を取り合うため、後でまとめてgreedy_lot_allocationに回す
+            buy_candidates.append(
+                {
+                    "ticker": s.ticker,
+                    "price": s.price,
+                    "score": s.buy_score,
+                    "current_value": current_value,
+                    "cap": target_value,
+                }
+            )
 
-    net_cash_flow = 0.0
+    available_cash = cash + freed_cash
+    additional_shares, leftover_cash = greedy_lot_allocation(buy_candidates, available_cash, LOT_SIZE)
+    for ticker, shares in additional_shares.items():
+        if shares > 0:
+            rows[ticker]["action_shares"] = shares
+
+    rows = sorted(rows.values(), key=lambda r: (-r["target_weight"], -r["current_value"]))
+
     for r in rows:
         flag = "  ⚠対象外（スコア低下・全売却の目安）" if r["target_weight"] == 0 and r["current_shares"] > 0 else ""
         emit(f"[{r['ticker']}] {r['name']}{flag}")
@@ -142,14 +215,12 @@ def main() -> None:
             verb = "買い増し" if r["action_shares"] > 0 else "売却"
             cost = abs(r["action_shares"]) * r["price"]
             emit(f"  → 提案: {verb} {abs(r['action_shares'])}株（概算 {cost:,.0f}円）")
-            net_cash_flow -= r["action_shares"] * r["price"]
         emit()
 
     if not rows:
         emit(f"買いスコア{MIN_SCORE}以上の銘柄がありません。MIN_SCOREを見直すか、日を改めて実行してください。")
 
-    emit(f"提案どおり売買した場合の現金残高目安: {cash + net_cash_flow:,.0f}円"
-         f"（単元株数への丸め誤差あり）")
+    emit(f"提案どおり売買した場合の現金残高目安: {leftover_cash:,.0f}円")
     emit()
     emit("※これは売買の提案であり、自動発注は一切行いません。実際の売買は自分の判断で証券会社にて行ってください。")
     emit("※日々のスコア変動には反応せず、月1回など間隔を空けて実行することを推奨します。")
