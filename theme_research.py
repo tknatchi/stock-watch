@@ -3,7 +3,10 @@
 theme_candidates.json に書き出すスクリプト。
 
 やっていること:
-    1. Googleニュース(日本語)から株式市場関連の見出しを取得
+    1. Googleニュース(日本語)から見出しを取得する。
+       株式市場向けキーワード検索(日本株 材料 など)に加えて、
+       ビジネス/テクノロジーの総合トピックフィードも混ぜることで、
+       ステーブルコインのような「株式市場という言葉を含まない横断的な話題」も拾えるようにしている
     2. 現在のWATCHLIST(watchlist.py)と合わせてGeminiに渡し、
        「注目テーマ」とその関連候補企業(社名のみ)を抽出させる
     3. 結果を theme_candidates.json に保存する
@@ -39,9 +42,17 @@ console_utf8.setup()
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 
-NEWS_RSS_URL = "https://news.google.com/rss/search?q={query}&hl=ja&gl=JP&ceid=JP:ja"
+NEWS_SEARCH_URL = "https://news.google.com/rss/search?q={query}&hl=ja&gl=JP&ceid=JP:ja"
+NEWS_TOPIC_URL = "https://news.google.com/rss/headlines/section/topic/{topic}?hl=ja&gl=JP&ceid=JP:ja"
+
+# キーワード検索: 株式市場に直結するニュースを狙い撃ちで拾う
 SEARCH_QUERIES = ["日本株 材料", "東証 業種 上昇", "日本株 テーマ 物色"]
 ARTICLES_PER_QUERY = 8
+
+# トピック総合フィード: キーワードを事前に決め打ちしないぶん、
+# ステーブルコインのような「株式市場の外から来る話題」も拾える
+NEWS_TOPICS = ["BUSINESS", "TECHNOLOGY"]
+ARTICLES_PER_TOPIC = 12
 
 # news-line-bot/fetch_news.py と同じ理由で、モデルは明示的に固定する
 GEMINI_MODEL = "gemini-3.5-flash"
@@ -51,32 +62,50 @@ BASE_DIR = Path(__file__).resolve().parent
 OUT_PATH = BASE_DIR / "theme_candidates.json"
 
 
-def fetch_market_news() -> list[dict]:
-    """複数の検索クエリでGoogleニュースを取得し、重複を除いてまとめる。"""
-    articles = []
-    seen = set()
+def _fetch_rss_titles(url: str, limit: int, seen: set[str]) -> list[str]:
+    """1つのRSS URLから見出しを取得し、簡易的な重複除去をしたうえで返す。"""
+    resp = requests.get(url, timeout=20)
+    resp.raise_for_status()
+    root = ET.fromstring(resp.content)
+
+    titles = []
+    for item in root.findall("./channel/item"):
+        title = (item.findtext("title") or "").strip()
+        if not title:
+            continue
+        # Googleニュースの見出しは "本文 - 配信元" の形式なので配信元を切り落とす
+        clean_title = re.sub(r"\s-\s[^-]+$", "", title).strip()
+
+        key = clean_title[:15]
+        if key in seen:
+            continue
+        seen.add(key)
+
+        titles.append(clean_title)
+        if len(titles) >= limit:
+            break
+    return titles
+
+
+def fetch_market_news() -> list[str]:
+    """株式市場向けキーワード検索 + 総合トピックフィードを両方取得してまとめる。
+
+    キーワード検索だけだと「日本株」のような言葉を含む記事しか拾えず、
+    ステーブルコインのような株式市場の外から来る横断的な話題を取りこぼす。
+    トピック総合フィードを混ぜることで、事前にキーワードを決め打ちしなくても
+    今動いている話題を拾えるようにしている。
+    """
+    seen: set[str] = set()
+    articles: list[str] = []
+
     for query in SEARCH_QUERIES:
-        url = NEWS_RSS_URL.format(query=requests.utils.quote(query))
-        resp = requests.get(url, timeout=20)
-        resp.raise_for_status()
-        root = ET.fromstring(resp.content)
+        url = NEWS_SEARCH_URL.format(query=requests.utils.quote(query))
+        articles += _fetch_rss_titles(url, ARTICLES_PER_QUERY, seen)
 
-        count = 0
-        for item in root.findall("./channel/item"):
-            title = (item.findtext("title") or "").strip()
-            if not title:
-                continue
-            clean_title = re.sub(r"\s-\s[^-]+$", "", title).strip()
+    for topic in NEWS_TOPICS:
+        url = NEWS_TOPIC_URL.format(topic=topic)
+        articles += _fetch_rss_titles(url, ARTICLES_PER_TOPIC, seen)
 
-            key = clean_title[:15]
-            if key in seen:
-                continue
-            seen.add(key)
-
-            articles.append(clean_title)
-            count += 1
-            if count >= ARTICLES_PER_QUERY:
-                break
     return articles
 
 
