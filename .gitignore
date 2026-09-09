@@ -6,3 +6,4 @@ __pycache__/
 
 # 個人の資産情報（現金・保有株数）。絶対にコミットしない
 portfolio.json
+portfolio_dashboard.html

@@ -44,6 +44,7 @@ console_utf8.setup()
 
 BASE_DIR = Path(__file__).resolve().parent
 PORTFOLIO_PATH = BASE_DIR / "portfolio.json"
+HISTORY_PATH = BASE_DIR / "logs" / "portfolio_history.json"
 
 # ==== ここを書き換えてカスタマイズする ====
 MIN_SCORE = 45          # この買いスコア未満の銘柄は新規の投資対象から除外
@@ -95,6 +96,31 @@ def greedy_lot_allocation(
     return additional_shares, cash
 
 
+def record_history(now: dt.datetime, cash: float, holdings_value: float, total_value: float) -> None:
+    """資産推移(現金・保有評価額・合計)を日次で logs/portfolio_history.json に追記する。
+
+    ダッシュボード(export_portfolio_data.py)の推移グラフ用。
+    同じ日に複数回実行された場合は、その日の分を上書きする(1日1点)。
+    """
+    HISTORY_PATH.parent.mkdir(exist_ok=True)
+    history = []
+    if HISTORY_PATH.exists():
+        history = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
+
+    today = now.strftime("%Y-%m-%d")
+    history = [h for h in history if h["date"] != today]
+    history.append(
+        {
+            "date": today,
+            "cash": round(cash, 0),
+            "holdingsValue": round(holdings_value, 0),
+            "totalValue": round(total_value, 0),
+        }
+    )
+    history.sort(key=lambda h: h["date"])
+    HISTORY_PATH.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def load_portfolio() -> dict:
     if not PORTFOLIO_PATH.exists():
         raise SystemExit(
@@ -141,6 +167,8 @@ def main() -> None:
     if total_value <= 0:
         emit("現金・保有評価額がともに0円のため計算できません。portfolio.json を確認してください。")
         return
+
+    record_history(now, cash, holdings_value, total_value)
 
     rows = {}
     buy_candidates = []

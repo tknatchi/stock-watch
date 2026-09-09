@@ -1,0 +1,435 @@
+<title>資産管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #eef1f0;
+    --surface: #fcfcfb;
+    --surface-2: #e2e6e1;
+    --ink: #14201c;
+    --ink-muted: #5b6b62;
+    --ink-faint: #8a978f;
+    --border: #ccd3cb;
+    --accent: #a9760a;
+    --accent-soft: #f1e6cf;
+    --up: #c23b3b;
+    --up-soft: #f6e2e0;
+    --down: #2f5fa8;
+    --down-soft: #dfe6f2;
+    --warn: #a9760a;
+    --warn-soft: #f1e6cf;
+    --shadow: 0 1px 2px rgba(20, 32, 28, 0.06), 0 4px 16px rgba(20, 32, 28, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1a19;
+      --surface: #20221f;
+      --surface-2: #262924;
+      --ink: #e9ece8;
+      --ink-muted: #9aa79f;
+      --ink-faint: #6d7871;
+      --border: #33372f;
+      --accent: #a67c28;
+      --accent-soft: #3a301a;
+      --up: #e2665f;
+      --up-soft: #3a2422;
+      --down: #4f86d0;
+      --down-soft: #1f2b3d;
+      --warn: #a67c28;
+      --warn-soft: #3a301a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1a1a19;
+    --surface: #20221f;
+    --surface-2: #262924;
+    --ink: #e9ece8;
+    --ink-muted: #9aa79f;
+    --ink-faint: #6d7871;
+    --border: #33372f;
+    --accent: #a67c28;
+    --accent-soft: #3a301a;
+    --up: #e2665f;
+    --up-soft: #3a2422;
+    --down: #4f86d0;
+    --down-soft: #1f2b3d;
+    --warn: #a67c28;
+    --warn-soft: #3a301a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 32px clamp(16px, 4vw, 48px) 64px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  header.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  header.page-head h1 {
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 4vw, 38px);
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+  header.page-head .tagline { color: var(--ink-muted); font-size: 13px; margin-top: 4px; }
+  header.page-head .meta { text-align: right; color: var(--ink-muted); font-size: 12.5px; }
+  header.page-head .meta .stamp { color: var(--ink); font-weight: 500; }
+
+  .paper-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12.5px;
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .stat-tile .label { font-size: 11.5px; color: var(--ink-muted); letter-spacing: 0.04em; margin-bottom: 6px; }
+  .stat-tile .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-tile .value.up { color: var(--up); }
+  .stat-tile .value.down { color: var(--down); }
+  .stat-tile .sub { font-size: 11.5px; color: var(--ink-faint); margin-top: 6px; }
+
+  section { margin-bottom: 40px; }
+  section > h2 { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 700; font-size: 17px; margin: 0 0 4px; }
+  section > .section-sub { color: var(--ink-muted); font-size: 12.5px; margin-bottom: 14px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px 14px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+
+  #history-chart .grid-line { stroke: var(--border); stroke-width: 1; }
+  #history-chart .axis-label { font-size: 11px; fill: var(--ink-muted); }
+  #history-chart .value-line { fill: none; stroke: var(--accent); stroke-width: 2; }
+  #history-chart .value-area { fill: var(--accent-soft); opacity: 0.5; }
+  #history-chart circle.point { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
+
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    line-height: 1.5;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity 0.1s ease;
+    z-index: 20;
+    max-width: 240px;
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip b { font-weight: 700; }
+  #tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+
+  table.holdings-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+  table.holdings-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.03em;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.holdings-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  table.holdings-table tbody tr:last-child td { border-bottom: none; }
+  table.holdings-table td.num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; text-align: right; }
+  table.holdings-table td.num.up { color: var(--up); }
+  table.holdings-table td.num.down { color: var(--down); }
+  .name-cell .ticker { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+  .name-cell .name { font-weight: 500; }
+  .sector-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border-radius: 5px;
+    padding: 1px 7px;
+    margin-top: 2px;
+  }
+  .drift-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .drift-tag.over { background: var(--up-soft); color: var(--up); }
+  .drift-tag.under { background: var(--down-soft); color: var(--down); }
+  .drift-tag.ok { background: var(--surface-2); color: var(--ink-muted); }
+
+  footer {
+    color: var(--ink-faint);
+    font-size: 11.5px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    line-height: 1.8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div id="tooltip"></div>
+
+<header class="page-head">
+  <div>
+    <h1>資産管理</h1>
+    <div class="tagline">stock-watch のスコア・目標配分に沿った、ポートフォリオの推移と内訳</div>
+  </div>
+  <div class="meta">
+    <div>最終更新 <span class="stamp mono" id="stamp-generated">—</span></div>
+    <div>rebalance.py の実行時にのみ更新（月1回程度を想定）</div>
+  </div>
+</header>
+
+<div class="paper-banner" id="paper-banner">
+  ⚠ これはペーパートレードのシミュレーションです。実際の資金は投入されていません。ここに出てくる「買い増し」「売却」は提案であり、自動発注はしません。
+</div>
+
+<div class="stats" id="stats"></div>
+
+<section>
+  <h2>資産推移</h2>
+  <div class="section-sub">rebalance.py を実行するたびに1点記録される合計評価額（現金＋保有評価額）の推移。</div>
+  <div class="panel">
+    <svg id="history-chart"></svg>
+  </div>
+</section>
+
+<section>
+  <h2>保有内訳</h2>
+  <div class="section-sub">現在の保有比率と、買いスコアに基づく目標比率の比較。乖離が大きい銘柄には印が付く（実際の売買提案は rebalance.py を参照）。</div>
+  <div class="panel">
+    <table class="holdings-table">
+      <thead>
+        <tr>
+          <th>銘柄</th>
+          <th style="text-align:right">株価</th>
+          <th style="text-align:right">前日比</th>
+          <th style="text-align:right">保有株数</th>
+          <th style="text-align:right">評価額</th>
+          <th style="text-align:right">現在比率</th>
+          <th style="text-align:right">目標比率</th>
+          <th style="text-align:right">買いスコア</th>
+          <th>状態</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  このページは情報の整理を目的とした個人用ツールであり、投資助言ではありません。データはYahoo Finance由来で遅延・誤差が生じることがあります。<br>
+  ソース: rebalance.py → export_portfolio_data.py → portfolio_dashboard_template.html（stock-watch プロジェクト）
+</footer>
+
+<script>
+  const DATA = __PORTFOLIO_DATA_JSON__;
+
+  const fmt = (n, d = 0) => (n === null || n === undefined) ? "—" : n.toLocaleString("ja-JP", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtPct = (n, d = 1) => (n === null || n === undefined) ? "—" : (n > 0 ? "+" : "") + (n * 100).toFixed(d) + "%";
+  const fmtChangePct = (n) => (n === null || n === undefined) ? "—" : (n > 0 ? "+" : "") + n.toFixed(2) + "%";
+
+  document.getElementById("stamp-generated").textContent = (DATA.generatedAt || "").replace("T", " ");
+
+  // ---------- tooltip ----------
+  const tooltipEl = document.getElementById("tooltip");
+  function showTooltip(evt, html) {
+    tooltipEl.innerHTML = html;
+    tooltipEl.style.left = evt.clientX + "px";
+    tooltipEl.style.top = (evt.clientY - 12) + "px";
+    tooltipEl.classList.add("visible");
+  }
+  function hideTooltip() { tooltipEl.classList.remove("visible"); }
+
+  // ---------- stat tiles ----------
+  (function renderStats() {
+    const history = DATA.history || [];
+    const first = history.length > 0 ? history[0].totalValue : DATA.totalValue;
+    const change = DATA.totalValue - first;
+    const changePct = first ? change / first : 0;
+
+    const tiles = [
+      { label: "合計評価額", value: fmt(DATA.totalValue) + "円", sub: `現金 ${fmt(DATA.cash)}円 + 保有 ${fmt(DATA.holdingsValue)}円` },
+      { label: "保有銘柄数", value: (DATA.holdings || []).filter(h => h.shares > 0).length, sub: "目標配分に基づく分散" },
+      {
+        label: "開始来の増減", value: fmtPct(changePct, 2), cls: change >= 0 ? "up" : "down",
+        sub: `${change >= 0 ? "+" : ""}${fmt(change)}円（開始時 ${fmt(first)}円）`,
+      },
+      { label: "現金比率", value: DATA.totalValue ? fmtPct(DATA.cash / DATA.totalValue, 1) : "—", sub: "未投資の現金" },
+    ];
+
+    document.getElementById("stats").innerHTML = tiles.map(t => `
+      <div class="stat-tile">
+        <div class="label">${t.label}</div>
+        <div class="value ${t.cls || ""} mono">${t.value}</div>
+        <div class="sub">${t.sub}</div>
+      </div>
+    `).join("");
+  })();
+
+  // ---------- history line chart ----------
+  (function renderHistoryChart() {
+    const svg = document.getElementById("history-chart");
+    const history = DATA.history && DATA.history.length > 0 ? DATA.history : [{ date: DATA.generatedAt?.slice(0, 10) || "", totalValue: DATA.totalValue }];
+
+    const width = 900, height = 260;
+    const padL = 64, padR = 20, padT = 16, padB = 32;
+    const plotW = width - padL - padR, plotH = height - padT - padB;
+
+    const values = history.map(h => h.totalValue);
+    const minV = Math.min(...values) * 0.98;
+    const maxV = Math.max(...values) * 1.02;
+    const range = (maxV - minV) || 1;
+
+    const xScale = (i) => history.length > 1 ? padL + (i / (history.length - 1)) * plotW : padL + plotW / 2;
+    const yScale = (v) => padT + plotH - ((v - minV) / range) * plotH;
+
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", height);
+
+    let parts = "";
+    const gridSteps = 4;
+    for (let i = 0; i <= gridSteps; i++) {
+      const v = minV + (range * i) / gridSteps;
+      const y = yScale(v);
+      parts += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" />`;
+      parts += `<text class="axis-label mono" x="${padL - 8}" y="${y + 4}" text-anchor="end">${Math.round(v).toLocaleString("ja-JP")}</text>`;
+    }
+    history.forEach((h, i) => {
+      parts += `<text class="axis-label mono" x="${xScale(i)}" y="${height - 6}" text-anchor="middle">${(h.date || "").slice(5)}</text>`;
+    });
+
+    if (history.length > 1) {
+      const linePoints = history.map((h, i) => `${xScale(i)},${yScale(h.totalValue)}`).join(" ");
+      const areaPoints = `${xScale(0)},${yScale(minV)} ${linePoints} ${xScale(history.length - 1)},${yScale(minV)}`;
+      parts += `<polygon class="value-area" points="${areaPoints}" />`;
+      parts += `<polyline class="value-line" points="${linePoints}" />`;
+    }
+
+    history.forEach((h, i) => {
+      parts += `<circle class="point" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="4" />`;
+    });
+
+    svg.innerHTML = parts;
+
+    svg.querySelectorAll("circle.point").forEach(c => {
+      c.addEventListener("mousemove", (e) => {
+        const h = history[+c.dataset.idx];
+        showTooltip(e, `<b>${h.date}</b>
+          <div class="tt-row"><span>合計</span><span>${fmt(h.totalValue)}円</span></div>
+          <div class="tt-row"><span>現金</span><span>${fmt(h.cash)}円</span></div>
+          <div class="tt-row"><span>保有評価額</span><span>${fmt(h.holdingsValue)}円</span></div>`);
+      });
+      c.addEventListener("mouseleave", hideTooltip);
+    });
+  })();
+
+  // ---------- holdings table ----------
+  (function renderTable() {
+    const rows = [...(DATA.holdings || [])];
+    const body = document.getElementById("table-body");
+
+    if (rows.length === 0) {
+      body.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--ink-faint); padding:24px;">保有銘柄がありません</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = rows.map(r => {
+      const changeCls = r.changePct >= 0 ? "up" : "down";
+      const driftPct = r.weight - r.targetWeight;
+      let driftCls = "ok", driftLabel = "目標付近";
+      if (r.targetWeight === 0 && r.shares > 0) {
+        driftCls = "over"; driftLabel = "対象外(要売却検討)";
+      } else if (driftPct > 0.02) {
+        driftCls = "over"; driftLabel = "やや過剰";
+      } else if (driftPct < -0.02) {
+        driftCls = "under"; driftLabel = "やや不足";
+      }
+
+      return `
+        <tr>
+          <td class="name-cell">
+            <div class="ticker">${r.ticker}</div>
+            <div class="name">${r.name}</div>
+            <span class="sector-tag">${r.sector}</span>
+          </td>
+          <td class="num mono">${fmt(r.price, 1)}</td>
+          <td class="num mono ${changeCls}">${fmtChangePct(r.changePct)}</td>
+          <td class="num mono">${r.shares}</td>
+          <td class="num mono">${fmt(r.value)}円</td>
+          <td class="num mono">${fmtPct(r.weight)}</td>
+          <td class="num mono">${fmtPct(r.targetWeight)}</td>
+          <td class="num mono">${r.buyScore}</td>
+          <td><span class="drift-tag ${driftCls}">${driftLabel}</span></td>
+        </tr>
+      `;
+    }).join("");
+  })();
+</script>
