@@ -96,16 +96,18 @@ def greedy_lot_allocation(
     return additional_shares, cash
 
 
-def record_history(now: dt.datetime, cash: float, holdings_value: float, total_value: float) -> None:
-    """資産推移(現金・保有評価額・合計)を日次で logs/portfolio_history.json に追記する。
+def record_history(
+    now: dt.datetime, cash: float, holdings_value: float, total_value: float, path: Path = HISTORY_PATH
+) -> None:
+    """資産推移(現金・保有評価額・合計)を日次で path(既定は logs/portfolio_history.json)に追記する。
 
     ダッシュボード(export_portfolio_data.py)の推移グラフ用。
     同じ日に複数回実行された場合は、その日の分を上書きする(1日1点)。
     """
-    HISTORY_PATH.parent.mkdir(exist_ok=True)
+    path.parent.mkdir(exist_ok=True)
     history = []
-    if HISTORY_PATH.exists():
-        history = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
+    if path.exists():
+        history = json.loads(path.read_text(encoding="utf-8"))
 
     today = now.strftime("%Y-%m-%d")
     history = [h for h in history if h["date"] != today]
@@ -118,57 +120,36 @@ def record_history(now: dt.datetime, cash: float, holdings_value: float, total_v
         }
     )
     history.sort(key=lambda h: h["date"])
-    HISTORY_PATH.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def load_portfolio() -> dict:
-    if not PORTFOLIO_PATH.exists():
+def load_portfolio(path: Path = PORTFOLIO_PATH) -> dict:
+    if not path.exists():
         raise SystemExit(
-            f"{PORTFOLIO_PATH.name} が見つかりません。\n"
-            f"portfolio.example.json をコピーして portfolio.json を作成し、"
+            f"{path.name} が見つかりません。\n"
+            f"portfolio.example.json をコピーして {path.name} を作成し、"
             f"cash・holdings を書き換えてから再実行してください。"
         )
-    return json.loads(PORTFOLIO_PATH.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def main() -> None:
-    portfolio = load_portfolio()
-    cash = float(portfolio.get("cash", 0))
-    holdings: dict[str, int] = portfolio.get("holdings", {})
+def compute_plan(cash: float, holdings: dict[str, int], snapshots: list) -> dict:
+    """現金・保有株数・現在の銘柄スナップショットから、リバランスの計算結果を返す。
 
-    # WATCHLIST(監視銘柄) + 実際に保有している銘柄(監視外でもよい)をまとめて取得
-    universe = sorted(set(WATCHLIST) | set(holdings.keys()))
-    snapshots = []
-    for ticker in universe:
-        s = fetch_snapshot(ticker)
-        if s is not None:
-            snapshots.append(s)
+    rebalance.py(提案を表示するだけ)と rebalance_auto.py(仮想ポートフォリオに
+    自動適用する)の両方から呼ばれる共通ロジック。
 
-    if not snapshots:
-        print("銘柄データを取得できませんでした。")
-        return
-
+    戻り値: {
+        "total_value", "holdings_value", "rows"(銘柄ごとの現在値・目標値・提案株数),
+        "leftover_cash"(全ての提案を実行した場合に残る現金),
+    }
+    """
     target_weights = compute_target_weights(snapshots, min_score=MIN_SCORE, max_weight=MAX_WEIGHT)
     holdings_value = sum(holdings.get(s.ticker, 0) * s.price for s in snapshots)
     total_value = cash + holdings_value
 
-    now = dt.datetime.now()
-    lines = [f"=== ポートフォリオ・リバランス提案 [{now:%Y-%m-%d %H:%M}] ===", ""]
-
-    def emit(line: str = "") -> None:
-        lines.append(line)
-        print(line)
-
-    emit(f"現金: {cash:,.0f}円  保有評価額: {holdings_value:,.0f}円  合計: {total_value:,.0f}円")
-    emit(f"（買いスコア{MIN_SCORE}未満は新規対象外・1銘柄上限{MAX_WEIGHT*100:.0f}%・"
-         f"乖離{DRIFT_THRESHOLD*100:.0f}%未満は提案なし）")
-    emit()
-
     if total_value <= 0:
-        emit("現金・保有評価額がともに0円のため計算できません。portfolio.json を確認してください。")
-        return
-
-    record_history(now, cash, holdings_value, total_value)
+        return {"total_value": total_value, "holdings_value": holdings_value, "rows": [], "leftover_cash": cash}
 
     rows = {}
     buy_candidates = []
@@ -183,7 +164,7 @@ def main() -> None:
         drift_ratio = drift_value / total_value
 
         if current_shares == 0 and target_weight == 0:
-            continue  # 保有なし・新規対象外の銘柄は表示しない
+            continue  # 保有なし・新規対象外の銘柄は対象外
 
         row = {
             "ticker": s.ticker,
@@ -230,7 +211,49 @@ def main() -> None:
             rows[ticker]["action_shares"] = shares
 
     rows = sorted(rows.values(), key=lambda r: (-r["target_weight"], -r["current_value"]))
+    return {"total_value": total_value, "holdings_value": holdings_value, "rows": rows, "leftover_cash": leftover_cash}
 
+
+def fetch_universe_snapshots(holdings: dict[str, int]) -> list:
+    """WATCHLIST(監視銘柄) + 実際に保有している銘柄(監視外でもよい)をまとめて取得する。"""
+    universe = sorted(set(WATCHLIST) | set(holdings.keys()))
+    return [s for s in (fetch_snapshot(t) for t in universe) if s is not None]
+
+
+def main() -> None:
+    portfolio = load_portfolio()
+    cash = float(portfolio.get("cash", 0))
+    holdings: dict[str, int] = portfolio.get("holdings", {})
+
+    snapshots = fetch_universe_snapshots(holdings)
+    if not snapshots:
+        print("銘柄データを取得できませんでした。")
+        return
+
+    plan = compute_plan(cash, holdings, snapshots)
+    holdings_value = plan["holdings_value"]
+    total_value = plan["total_value"]
+    leftover_cash = plan["leftover_cash"]
+
+    now = dt.datetime.now()
+    lines = [f"=== ポートフォリオ・リバランス提案 [{now:%Y-%m-%d %H:%M}] ===", ""]
+
+    def emit(line: str = "") -> None:
+        lines.append(line)
+        print(line)
+
+    emit(f"現金: {cash:,.0f}円  保有評価額: {holdings_value:,.0f}円  合計: {total_value:,.0f}円")
+    emit(f"（買いスコア{MIN_SCORE}未満は新規対象外・1銘柄上限{MAX_WEIGHT*100:.0f}%・"
+         f"乖離{DRIFT_THRESHOLD*100:.0f}%未満は提案なし）")
+    emit()
+
+    if total_value <= 0:
+        emit("現金・保有評価額がともに0円のため計算できません。portfolio.json を確認してください。")
+        return
+
+    record_history(now, cash, holdings_value, total_value)
+
+    rows = plan["rows"]
     for r in rows:
         flag = "  ⚠対象外（スコア低下・全売却の目安）" if r["target_weight"] == 0 and r["current_shares"] > 0 else ""
         emit(f"[{r['ticker']}] {r['name']}{flag}")

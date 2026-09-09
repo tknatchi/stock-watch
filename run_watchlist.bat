@@ -5,6 +5,7 @@ python watchlist.py >> logs\run_history.log 2>&1
 python export_dashboard_data.py >> logs\run_history.log 2>&1
 python generate_dashboard.py >> logs\run_history.log 2>&1
 if exist portfolio.json python rebalance.py >> logs\run_history.log 2>&1
+if exist portfolio_auto.json python rebalance_auto.py >> logs\run_history.log 2>&1
 
 rem クラウド側の自動公開ジョブ(stock-watch dashboard daily republish)が
 rem Yahoo Financeへ直接アクセスできないため、ここで生成した最新データを

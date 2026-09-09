@@ -155,6 +155,27 @@
   #history-chart .value-line { fill: none; stroke: var(--accent); stroke-width: 2; }
   #history-chart .value-area { fill: var(--accent-soft); opacity: 0.5; }
   #history-chart circle.point { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
+  #history-chart .value-line-auto { fill: none; stroke: var(--down); stroke-width: 2; stroke-dasharray: 5 3; }
+  #history-chart circle.point-auto { fill: var(--down); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
+
+  .chart-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ink-muted); }
+  .chart-legend .swatch { display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 2px; }
+  .chart-legend .swatch.dashed { background-image: linear-gradient(90deg, var(--down) 60%, transparent 0%); background-size: 8px 3px; }
+
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tab-btn {
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .tab-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
+  .tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   #tooltip {
     position: fixed;
@@ -242,27 +263,29 @@
   </div>
   <div class="meta">
     <div>最終更新 <span class="stamp mono" id="stamp-generated">—</span></div>
-    <div>rebalance.py の実行時にのみ更新（月1回程度を想定）</div>
+    <div>バイ&ホールド組は月1回程度・自動売買組は毎日、rebalance系スクリプトの実行時に更新</div>
   </div>
 </header>
 
 <div class="paper-banner" id="paper-banner">
-  ⚠ これはペーパートレードのシミュレーションです。実際の資金は投入されていません。ここに出てくる「買い増し」「売却」は提案であり、自動発注はしません。
+  ⚠ これはペーパートレードのシミュレーションです。実際の資金は投入されていません。「バイ&ホールド」は開始時点のまま何もしない組、「自動売買」はスコアの提案を毎日そのまま機械的に適用する組で、どちらも自動発注は一切していません。
 </div>
 
 <div class="stats" id="stats"></div>
 
 <section>
   <h2>資産推移</h2>
-  <div class="section-sub">rebalance.py を実行するたびに1点記録される合計評価額（現金＋保有評価額）の推移。</div>
+  <div class="section-sub" id="history-sub">合計評価額（現金＋保有評価額）の推移。</div>
   <div class="panel">
     <svg id="history-chart"></svg>
+    <div class="chart-legend" id="chart-legend"></div>
   </div>
 </section>
 
 <section>
   <h2>保有内訳</h2>
-  <div class="section-sub">現在の保有比率と、買いスコアに基づく目標比率の比較。乖離が大きい銘柄には印が付く（実際の売買提案は rebalance.py を参照）。</div>
+  <div class="section-sub">現在の保有比率と、買いスコアに基づく目標比率の比較。乖離が大きい銘柄には印が付く。</div>
+  <div class="tab-bar" id="tab-bar" style="display:none"></div>
   <div class="panel">
     <table class="holdings-table">
       <thead>
@@ -308,6 +331,8 @@
   function hideTooltip() { tooltipEl.classList.remove("visible"); }
 
   // ---------- stat tiles ----------
+  const hasAuto = !!DATA.auto;
+
   (function renderStats() {
     const history = DATA.history || [];
     const first = history.length > 0 ? history[0].totalValue : DATA.totalValue;
@@ -315,14 +340,36 @@
     const changePct = first ? change / first : 0;
 
     const tiles = [
-      { label: "合計評価額", value: fmt(DATA.totalValue) + "円", sub: `現金 ${fmt(DATA.cash)}円 + 保有 ${fmt(DATA.holdingsValue)}円` },
-      { label: "保有銘柄数", value: (DATA.holdings || []).filter(h => h.shares > 0).length, sub: "目標配分に基づく分散" },
+      { label: "バイ&ホールド 合計", value: fmt(DATA.totalValue) + "円", sub: `現金 ${fmt(DATA.cash)}円 + 保有 ${fmt(DATA.holdingsValue)}円` },
       {
-        label: "開始来の増減", value: fmtPct(changePct, 2), cls: change >= 0 ? "up" : "down",
+        label: "バイ&ホールド 開始来", value: fmtPct(changePct, 2), cls: change >= 0 ? "up" : "down",
         sub: `${change >= 0 ? "+" : ""}${fmt(change)}円（開始時 ${fmt(first)}円）`,
       },
-      { label: "現金比率", value: DATA.totalValue ? fmtPct(DATA.cash / DATA.totalValue, 1) : "—", sub: "未投資の現金" },
     ];
+
+    if (hasAuto) {
+      const autoHistory = DATA.auto.history || [];
+      const autoFirst = autoHistory.length > 0 ? autoHistory[0].totalValue : DATA.auto.totalValue;
+      const autoChange = DATA.auto.totalValue - autoFirst;
+      const autoChangePct = autoFirst ? autoChange / autoFirst : 0;
+      const vsManual = DATA.auto.totalValue - DATA.totalValue;
+
+      tiles.push(
+        {
+          label: "自動売買 合計", value: fmt(DATA.auto.totalValue) + "円",
+          sub: `現金 ${fmt(DATA.auto.cash)}円 + 保有 ${fmt(DATA.auto.holdingsValue)}円`,
+        },
+        {
+          label: "自動売買 開始来", value: fmtPct(autoChangePct, 2), cls: autoChange >= 0 ? "up" : "down",
+          sub: `バイ&ホールド比 ${vsManual >= 0 ? "+" : ""}${fmt(vsManual)}円`,
+        },
+      );
+    } else {
+      tiles.push(
+        { label: "保有銘柄数", value: (DATA.holdings || []).filter(h => h.shares > 0).length, sub: "目標配分に基づく分散" },
+        { label: "現金比率", value: DATA.totalValue ? fmtPct(DATA.cash / DATA.totalValue, 1) : "—", sub: "未投資の現金" },
+      );
+    }
 
     document.getElementById("stats").innerHTML = tiles.map(t => `
       <div class="stat-tile">
@@ -337,17 +384,27 @@
   (function renderHistoryChart() {
     const svg = document.getElementById("history-chart");
     const history = DATA.history && DATA.history.length > 0 ? DATA.history : [{ date: DATA.generatedAt?.slice(0, 10) || "", totalValue: DATA.totalValue }];
+    const autoHistory = hasAuto && DATA.auto.history && DATA.auto.history.length > 0 ? DATA.auto.history : null;
+
+    document.getElementById("history-sub").textContent = hasAuto
+      ? "実線=バイ&ホールド組、破線=自動売買組。合計評価額(現金＋保有評価額)の推移。"
+      : "rebalance.py を実行するたびに1点記録される合計評価額（現金＋保有評価額）の推移。";
+    document.getElementById("chart-legend").innerHTML = hasAuto
+      ? `<span><span class="swatch" style="background:var(--accent)"></span>バイ&ホールド</span>
+         <span><span class="swatch dashed"></span>自動売買</span>`
+      : "";
 
     const width = 900, height = 260;
     const padL = 64, padR = 20, padT = 16, padB = 32;
     const plotW = width - padL - padR, plotH = height - padT - padB;
 
-    const values = history.map(h => h.totalValue);
-    const minV = Math.min(...values) * 0.98;
-    const maxV = Math.max(...values) * 1.02;
+    const allValues = history.map(h => h.totalValue).concat(autoHistory ? autoHistory.map(h => h.totalValue) : []);
+    const minV = Math.min(...allValues) * 0.98;
+    const maxV = Math.max(...allValues) * 1.02;
     const range = (maxV - minV) || 1;
+    const pointCount = Math.max(history.length, autoHistory ? autoHistory.length : 0);
 
-    const xScale = (i) => history.length > 1 ? padL + (i / (history.length - 1)) * plotW : padL + plotW / 2;
+    const xScale = (i) => pointCount > 1 ? padL + (i / (pointCount - 1)) * plotW : padL + plotW / 2;
     const yScale = (v) => padT + plotH - ((v - minV) / range) * plotH;
 
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -362,7 +419,8 @@
       parts += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" />`;
       parts += `<text class="axis-label mono" x="${padL - 8}" y="${y + 4}" text-anchor="end">${Math.round(v).toLocaleString("ja-JP")}</text>`;
     }
-    history.forEach((h, i) => {
+    const labelSource = history.length >= pointCount ? history : autoHistory;
+    labelSource.forEach((h, i) => {
       parts += `<text class="axis-label mono" x="${xScale(i)}" y="${height - 6}" text-anchor="middle">${(h.date || "").slice(5)}</text>`;
     });
 
@@ -372,17 +430,28 @@
       parts += `<polygon class="value-area" points="${areaPoints}" />`;
       parts += `<polyline class="value-line" points="${linePoints}" />`;
     }
+    if (autoHistory && autoHistory.length > 1) {
+      const linePoints = autoHistory.map((h, i) => `${xScale(i)},${yScale(h.totalValue)}`).join(" ");
+      parts += `<polyline class="value-line-auto" points="${linePoints}" />`;
+    }
 
     history.forEach((h, i) => {
-      parts += `<circle class="point" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="4" />`;
+      parts += `<circle class="point" data-series="manual" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="4" />`;
     });
+    if (autoHistory) {
+      autoHistory.forEach((h, i) => {
+        parts += `<circle class="point-auto" data-series="auto" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="4" />`;
+      });
+    }
 
     svg.innerHTML = parts;
 
-    svg.querySelectorAll("circle.point").forEach(c => {
+    svg.querySelectorAll("circle.point, circle.point-auto").forEach(c => {
       c.addEventListener("mousemove", (e) => {
-        const h = history[+c.dataset.idx];
-        showTooltip(e, `<b>${h.date}</b>
+        const src = c.dataset.series === "auto" ? autoHistory : history;
+        const h = src[+c.dataset.idx];
+        const label = c.dataset.series === "auto" ? "自動売買" : "バイ&ホールド";
+        showTooltip(e, `<b>${h.date} ・ ${label}</b>
           <div class="tt-row"><span>合計</span><span>${fmt(h.totalValue)}円</span></div>
           <div class="tt-row"><span>現金</span><span>${fmt(h.cash)}円</span></div>
           <div class="tt-row"><span>保有評価額</span><span>${fmt(h.holdingsValue)}円</span></div>`);
@@ -392,8 +461,8 @@
   })();
 
   // ---------- holdings table ----------
-  (function renderTable() {
-    const rows = [...(DATA.holdings || [])];
+  function renderTable(rows) {
+    rows = [...(rows || [])];
     const body = document.getElementById("table-body");
 
     if (rows.length === 0) {
@@ -431,5 +500,27 @@
         </tr>
       `;
     }).join("");
+  }
+
+  // ---------- タブ切り替え(バイ&ホールド / 自動売買) ----------
+  (function initTabs() {
+    if (!hasAuto) {
+      renderTable(DATA.holdings);
+      return;
+    }
+    const tabBar = document.getElementById("tab-bar");
+    tabBar.style.display = "";
+    tabBar.innerHTML = `
+      <button type="button" class="tab-btn active" data-tab="manual">バイ&ホールド</button>
+      <button type="button" class="tab-btn" data-tab="auto">自動売買</button>
+    `;
+    tabBar.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        tabBar.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderTable(btn.dataset.tab === "auto" ? DATA.auto.holdings : DATA.holdings);
+      });
+    });
+    renderTable(DATA.holdings);
   })();
 </script>
