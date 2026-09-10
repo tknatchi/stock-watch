@@ -36,8 +36,17 @@ PORTFOLIO_HTML_PATH = BASE_DIR / "portfolio_dashboard.html"
 OUT_PATH = BASE_DIR / "combined_dashboard.html"
 
 
+LINE_WIDTH = 200  # 生成物を「全部1行の巨大な文字列」にしない(閲覧・レビューしやすくするため)
+
+
 def b64(path: Path) -> str:
-    return base64.b64encode(path.read_text(encoding="utf-8").encode("utf-8")).decode("ascii")
+    """base64化したうえで改行を入れて折り返す。
+
+    改行を入れても atob() 側が自動でホワイトスペースを除去してくれるため
+    デコード結果に影響はない(forgiving-base64デコードの仕様)。
+    """
+    raw = base64.b64encode(path.read_text(encoding="utf-8").encode("utf-8")).decode("ascii")
+    return "\n".join(raw[i : i + LINE_WIDTH] for i in range(0, len(raw), LINE_WIDTH))
 
 
 def main() -> None:
