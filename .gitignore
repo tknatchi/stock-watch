@@ -1,10 +1,13 @@
 # 実行のたびに生成されるファイル（ソースではないので追跡しない）
 logs/
 dashboard.html
+combined_dashboard.html
 __pycache__/
 *.pyc
 
 # 個人の資産情報（現金・保有株数）。絶対にコミットしない
+# ※ portfolio_dashboard_data_latest.json は例外。資産管理タブをクラウド側で自動
+#   再公開するため、現金額・保有株数を含むデータをこのリポジトリ経由で渡す運用にした。
 portfolio.json
 portfolio_auto.json
 portfolio_dashboard.html

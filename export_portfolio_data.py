@@ -16,9 +16,12 @@
 
 注意:
     portfolio.json / portfolio_auto.json は現金・保有株数という個人の資産情報。
-    このスクリプトが出力するJSON/HTMLにも同じ情報が含まれるため、株モニタリング側の
-    ダッシュボードとは別のArtifactとして扱い、Claudeが手動で読んで公開する運用とする
-    (自動の週次/日次クラウド再公開の対象には含めない)。
+    このスクリプトが出力するJSON(logs/portfolio_dashboard_data.json)にも同じ情報が
+    含まれる。2026-09-10以降、ユーザーの承認のうえで、この金額入りデータを
+    portfolio_dashboard_data_latest.json としてリポジトリにpushし、株モニタリングと
+    同じダッシュボード(combined_dashboard_template.html、タブ切り替え)に載せて
+    クラウド側の日次自動再公開の対象に含める運用に変更した。
+    (portfolio.json / portfolio_auto.json 自体は引き続き.gitignore対象で非公開)
 """
 
 from __future__ import annotations

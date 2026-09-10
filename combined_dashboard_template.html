@@ -1,0 +1,220 @@
+<title>株式・資産ダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #eef1f0;
+    --surface: #fcfcfb;
+    --surface-2: #e2e6e1;
+    --ink: #14201c;
+    --ink-muted: #5b6b62;
+    --ink-faint: #8a978f;
+    --border: #ccd3cb;
+    --accent: #a9760a;
+    --accent-soft: #f1e6cf;
+    --shadow: 0 1px 2px rgba(20, 32, 28, 0.06), 0 4px 16px rgba(20, 32, 28, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1a19;
+      --surface: #20221f;
+      --surface-2: #262924;
+      --ink: #e9ece8;
+      --ink-muted: #9aa79f;
+      --ink-faint: #6d7871;
+      --border: #33372f;
+      --accent: #a67c28;
+      --accent-soft: #3a301a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1a1a19;
+    --surface: #20221f;
+    --surface-2: #262924;
+    --ink: #e9ece8;
+    --ink-muted: #9aa79f;
+    --ink-faint: #6d7871;
+    --border: #33372f;
+    --accent: #a67c28;
+    --accent-soft: #3a301a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans JP", "Zen Kaku Gothic New", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  nav.tabs {
+    flex: none;
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav.tabs button {
+    appearance: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-weight: 700;
+    font-family: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  nav.tabs button:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  nav.tabs button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  nav.tabs button[aria-selected="true"] {
+    background: var(--bg);
+    color: var(--ink);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  nav.tabs button[aria-selected="true"] .dot {
+    background: var(--accent);
+  }
+
+  nav.tabs .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    flex: none;
+  }
+
+  main {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  main iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: var(--bg);
+    display: none;
+  }
+
+  main iframe[data-active="true"] {
+    display: block;
+  }
+
+  .fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+</style>
+
+<nav class="tabs" role="tablist" aria-label="ダッシュボード切り替え">
+  <button type="button" role="tab" id="tab-btn-stock" aria-controls="tab-stock" data-tab="stock">
+    <span class="dot"></span>株モニタリング
+  </button>
+  <button type="button" role="tab" id="tab-btn-portfolio" aria-controls="tab-portfolio" data-tab="portfolio">
+    <span class="dot"></span>資産管理
+  </button>
+</nav>
+
+<main>
+  <div class="fallback">読み込み中…</div>
+  <iframe id="tab-stock" role="tabpanel" aria-labelledby="tab-btn-stock" title="株モニタリング"></iframe>
+  <iframe id="tab-portfolio" role="tabpanel" aria-labelledby="tab-btn-portfolio" title="資産管理"></iframe>
+</main>
+
+<script>
+(function () {
+  var STOCK_HTML_B64 = "__STOCK_HTML_B64__";
+  var PORTFOLIO_HTML_B64 = "__PORTFOLIO_HTML_B64__";
+
+  function b64ToUtf8(b64) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+
+  var frames = {
+    stock: document.getElementById("tab-stock"),
+    portfolio: document.getElementById("tab-portfolio")
+  };
+  var buttons = {
+    stock: document.getElementById("tab-btn-stock"),
+    portfolio: document.getElementById("tab-btn-portfolio")
+  };
+
+  try {
+    frames.stock.srcdoc = b64ToUtf8(STOCK_HTML_B64);
+  } catch (e) {
+    frames.stock.srcdoc = "<p style=\"font-family:sans-serif;padding:24px\">株モニタリングの読み込みに失敗しました。</p>";
+  }
+  try {
+    frames.portfolio.srcdoc = b64ToUtf8(PORTFOLIO_HTML_B64);
+  } catch (e) {
+    frames.portfolio.srcdoc = "<p style=\"font-family:sans-serif;padding:24px\">資産管理の読み込みに失敗しました。</p>";
+  }
+
+  var STORAGE_KEY = "combined-dashboard-active-tab";
+
+  function activate(name) {
+    Object.keys(frames).forEach(function (k) {
+      var isActive = k === name;
+      frames[k].dataset.active = isActive ? "true" : "false";
+      buttons[k].setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    try { localStorage.setItem(STORAGE_KEY, name); } catch (e) {}
+  }
+
+  Object.keys(buttons).forEach(function (k) {
+    buttons[k].addEventListener("click", function () { activate(k); });
+  });
+
+  var initial = "stock";
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "stock" || saved === "portfolio") initial = saved;
+  } catch (e) {}
+  activate(initial);
+})();
+</script>
