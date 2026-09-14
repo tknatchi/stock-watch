@@ -29,6 +29,14 @@
     (rebalance.py と違い、こちらは仮想シミュレーションなのでそのまま自動適用してよい)。
     損切りが発動した場合はLINE_CHANNEL_ACCESS_TOKENが設定されていればLINEにも
     アラートを送る(line_alert.py)。
+
+クールダウンについて(2026-09-14追加):
+    損切り直後は急落の反動でPER・RSIなどのスコアがむしろ上がりやすく、対策なしだと
+    次の実行で同じ銘柄を即買い戻してしまう。これを防ぐため、損切りした銘柄は
+    STOP_LOSS_COOLDOWN_RUNS回(このスクリプトの実行回数ベース。日次実行前提なので
+    おおむね営業日数に相当)は新規の買い候補から除外する。portfolio_auto.jsonの
+    cooldownフィールドで残り回数を管理し、実行のたびに1減らして0になったら解除する。
+    まずは推奨値(10営業日)で運用し、様子を見ながら調整する想定。
 """
 
 from __future__ import annotations
@@ -48,6 +56,10 @@ BASE_DIR = Path(__file__).resolve().parent
 PORTFOLIO_AUTO_PATH = BASE_DIR / "portfolio_auto.json"
 HISTORY_AUTO_PATH = LOG_DIR / "portfolio_auto_history.json"
 
+# 損切り後のクールダウン期間(このスクリプトの実行回数ベース。日次実行前提)。
+# 推奨値として10営業日(約2週間)からスタートし、様子を見て調整する。
+STOP_LOSS_COOLDOWN_RUNS = 10
+
 
 def main() -> None:
     if not PORTFOLIO_AUTO_PATH.exists():
@@ -62,12 +74,18 @@ def main() -> None:
     holdings: dict[str, int] = dict(portfolio.get("holdings", {}))
     cost_basis: dict[str, float] = dict(portfolio.get("costBasis", {}))
 
+    # クールダウン: 前回までの残り回数を1消化(0になったら解除)。今回発動した損切り分は
+    # このあと trade 適用後に新規追加するので、ここではまだ加えない。
+    cooldown: dict[str, int] = {
+        t: d - 1 for t, d in dict(portfolio.get("cooldown", {})).items() if d - 1 > 0
+    }
+
     snapshots = rb.fetch_universe_snapshots(holdings)
     if not snapshots:
         print("銘柄データを取得できませんでした。")
         return
 
-    plan = rb.compute_plan(cash, holdings, snapshots, cost_basis)
+    plan = rb.compute_plan(cash, holdings, snapshots, cost_basis, set(cooldown))
     if plan["total_value"] <= 0:
         print("現金・保有評価額がともに0円のため計算できません。portfolio_auto.json を確認してください。")
         return
@@ -121,10 +139,20 @@ def main() -> None:
         cost = abs(r["action_shares"]) * r["price"]
         emit(f"[{r['ticker']}] {r['name']}: {verb} {abs(r['action_shares'])}株（概算 {cost:,.0f}円）{tag}")
 
+        if r["stop_loss"]:
+            # 損切りした銘柄はクールダウンを開始(今回の実行分は消化済み扱いにしないので、
+            # 次回実行時の1回目の減算からカウントが始まる)
+            cooldown[ticker] = STOP_LOSS_COOLDOWN_RUNS
+
     new_cash = plan["leftover_cash"]
 
     if not traded:
         emit("本日の売買はありませんでした（目標比率とのズレがしきい値未満）。")
+
+    cooldown_rows = [r for r in plan["rows"] if r.get("cooldown")]
+    if cooldown_rows:
+        emit()
+        emit("（クールダウン中につき買い候補から除外: " + "、".join(f"{r['ticker']}({r['name']})" for r in cooldown_rows) + "）")
 
     emit()
     emit(f"実行後: 現金 {new_cash:,.0f}円 + 保有評価額 {plan['total_value'] - new_cash:,.0f}円 "
@@ -133,7 +161,11 @@ def main() -> None:
     emit("※完全な仮想シミュレーションです。実際の資金は一切動いていません。")
 
     PORTFOLIO_AUTO_PATH.write_text(
-        json.dumps({"cash": round(new_cash, 2), "holdings": holdings, "costBasis": cost_basis}, ensure_ascii=False, indent=2),
+        json.dumps(
+            {"cash": round(new_cash, 2), "holdings": holdings, "costBasis": cost_basis, "cooldown": cooldown},
+            ensure_ascii=False,
+            indent=2,
+        ),
         encoding="utf-8",
     )
 

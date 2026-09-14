@@ -153,7 +153,11 @@ def load_portfolio(path: Path = PORTFOLIO_PATH) -> dict:
 
 
 def compute_plan(
-    cash: float, holdings: dict[str, int], snapshots: list, cost_basis: dict[str, float] | None = None
+    cash: float,
+    holdings: dict[str, int],
+    snapshots: list,
+    cost_basis: dict[str, float] | None = None,
+    cooldown_tickers: set[str] | None = None,
 ) -> dict:
     """現金・保有株数・現在の銘柄スナップショットから、リバランスの計算結果を返す。
 
@@ -163,14 +167,22 @@ def compute_plan(
     cost_basis: {ticker: 取得単価}。渡された銘柄は損切りルール(STOP_LOSS_THRESHOLD)の
     判定対象になり、下落率が閾値を超えると買いスコア・目標比率を無視して全売却を提案する。
 
+    cooldown_tickers: 損切り直後でクールダウン中の銘柄コード集合(2026-09-14追加)。
+    現在保有していない(current_shares==0)銘柄がここに含まれる場合、スコア・目標比率が
+    どうであれ新規の買い候補にしない(急落直後はPER/RSIが理由でスコアが上がり、
+    即座に買い戻してしまう問題への対策)。呼び出し元(rebalance_auto.py)が
+    日数を管理し、期限が切れた銘柄は呼び出し前に集合から除いておくこと。
+
     戻り値: {
         "total_value", "holdings_value", "rows"(銘柄ごとの現在値・目標値・提案株数。
-        損切り対象行は "stop_loss": True, "loss_pct" を含む),
+        損切り対象行は "stop_loss": True, "loss_pct" を、クールダウン中の行は
+        "cooldown": True を含む),
         "leftover_cash"(全ての提案を実行した場合に残る現金),
         "stop_loss_rows"(損切りが発動した行だけの一覧),
     }
     """
     cost_basis = cost_basis or {}
+    cooldown_tickers = cooldown_tickers or set()
     target_weights = compute_target_weights(snapshots, min_score=MIN_SCORE, max_weight=MAX_WEIGHT)
     holdings_value = sum(holdings.get(s.ticker, 0) * s.price for s in snapshots)
     total_value = cash + holdings_value
@@ -202,6 +214,7 @@ def compute_plan(
         basis = cost_basis.get(s.ticker)
         loss_pct = (s.price - basis) / basis if basis else None
         stop_loss = current_shares > 0 and loss_pct is not None and loss_pct <= STOP_LOSS_THRESHOLD
+        in_cooldown = current_shares == 0 and s.ticker in cooldown_tickers
 
         row = {
             "ticker": s.ticker,
@@ -216,6 +229,7 @@ def compute_plan(
             "cost_basis": basis,
             "loss_pct": loss_pct,
             "stop_loss": stop_loss,
+            "cooldown": in_cooldown,
         }
         rows[s.ticker] = row
 
@@ -223,6 +237,10 @@ def compute_plan(
             # 損切り: スコア・目標比率・乖離しきい値より優先して全株を手放す想定で計算する
             row["action_shares"] = -current_shares
             freed_cash += current_shares * s.price
+            continue
+
+        if in_cooldown:
+            # 損切り直後のクールダウン中: スコアが回復していても新規に買い戻さない
             continue
 
         if abs(drift_ratio) < DRIFT_THRESHOLD:
