@@ -107,7 +107,8 @@ def main() -> None:
         if r["action_shares"] > 0:
             # 買い増し: 加重平均で取得単価を更新(新規建ての場合はそのまま今回の価格)
             old_basis = cost_basis.get(ticker, r["price"])
-            cost_basis[ticker] = (old_shares * old_basis + r["action_shares"] * r["price"]) / new_shares if new_shares else r["price"]
+            new_basis = (old_shares * old_basis + r["action_shares"] * r["price"]) / new_shares if new_shares else r["price"]
+            cost_basis[ticker] = round(new_basis, 2)
 
         if new_shares <= 0:
             holdings.pop(ticker, None)
