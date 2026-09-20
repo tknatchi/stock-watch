@@ -157,10 +157,13 @@
   #history-chart circle.point { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
   #history-chart .value-line-auto { fill: none; stroke: var(--down); stroke-width: 2; stroke-dasharray: 5 3; }
   #history-chart circle.point-auto { fill: var(--down); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
+  #history-chart .value-line-benchmark { fill: none; stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 1.5 3; }
+  #history-chart circle.point-benchmark { fill: var(--ink-faint); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
 
   .chart-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ink-muted); }
   .chart-legend .swatch { display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 2px; }
   .chart-legend .swatch.dashed { background-image: linear-gradient(90deg, var(--down) 60%, transparent 0%); background-size: 8px 3px; }
+  .chart-legend .swatch.dotted { background-image: linear-gradient(90deg, var(--ink-faint) 50%, transparent 0%); background-size: 5px 3px; }
 
   .tab-bar { display: flex; gap: 6px; margin-bottom: 14px; }
   .tab-btn {
@@ -332,6 +335,7 @@
 
   // ---------- stat tiles ----------
   const hasAuto = !!DATA.auto;
+  const hasBenchmark = !!DATA.benchmark && (DATA.benchmark.history || []).length > 0;
 
   (function renderStats() {
     const history = DATA.history || [];
@@ -371,6 +375,23 @@
       );
     }
 
+    if (hasBenchmark) {
+      const benchHistory = DATA.benchmark.history;
+      const benchFirst = benchHistory[0].totalValue;
+      const benchLast = benchHistory[benchHistory.length - 1].totalValue;
+      const benchChangePct = benchFirst ? (benchLast - benchFirst) / benchFirst : 0;
+      const vsManualBench = DATA.totalValue - benchLast;
+      let sub = `バイ&ホールド比 ${vsManualBench >= 0 ? "+" : ""}${fmt(vsManualBench)}円`;
+      if (hasAuto) {
+        const vsAutoBench = DATA.auto.totalValue - benchLast;
+        sub += ` ／ 自動売買比 ${vsAutoBench >= 0 ? "+" : ""}${fmt(vsAutoBench)}円`;
+      }
+      tiles.push({
+        label: `${DATA.benchmark.label} 開始来`, value: fmtPct(benchChangePct, 2), cls: benchChangePct >= 0 ? "up" : "down",
+        sub,
+      });
+    }
+
     document.getElementById("stats").innerHTML = tiles.map(t => `
       <div class="stat-tile">
         <div class="label">${t.label}</div>
@@ -385,24 +406,32 @@
     const svg = document.getElementById("history-chart");
     const history = DATA.history && DATA.history.length > 0 ? DATA.history : [{ date: DATA.generatedAt?.slice(0, 10) || "", totalValue: DATA.totalValue }];
     const autoHistory = hasAuto && DATA.auto.history && DATA.auto.history.length > 0 ? DATA.auto.history : null;
+    const benchHistory = hasBenchmark ? DATA.benchmark.history : null;
 
     document.getElementById("history-sub").textContent = hasAuto
-      ? "実線=バイ&ホールド組、破線=自動売買組。合計評価額(現金＋保有評価額)の推移。"
-      : "rebalance.py を実行するたびに1点記録される合計評価額（現金＋保有評価額）の推移。";
-    document.getElementById("chart-legend").innerHTML = hasAuto
-      ? `<span><span class="swatch" style="background:var(--accent)"></span>バイ&ホールド</span>
-         <span><span class="swatch dashed"></span>自動売買</span>`
-      : "";
+      ? `実線=バイ&ホールド組、破線=自動売買組${hasBenchmark ? "、点線=" + DATA.benchmark.label : ""}。合計評価額(現金＋保有評価額)の推移。`
+      : `rebalance.py を実行するたびに1点記録される合計評価額（現金＋保有評価額）の推移。${hasBenchmark ? "点線は" + DATA.benchmark.label + "。" : ""}`;
+    const legendParts = [];
+    if (hasAuto) {
+      legendParts.push(`<span><span class="swatch" style="background:var(--accent)"></span>バイ&ホールド</span>`);
+      legendParts.push(`<span><span class="swatch dashed"></span>自動売買</span>`);
+    }
+    if (hasBenchmark) {
+      legendParts.push(`<span><span class="swatch dotted"></span>${DATA.benchmark.label}</span>`);
+    }
+    document.getElementById("chart-legend").innerHTML = legendParts.join("\n");
 
     const width = 900, height = 260;
     const padL = 64, padR = 20, padT = 16, padB = 32;
     const plotW = width - padL - padR, plotH = height - padT - padB;
 
-    const allValues = history.map(h => h.totalValue).concat(autoHistory ? autoHistory.map(h => h.totalValue) : []);
+    const allValues = history.map(h => h.totalValue)
+      .concat(autoHistory ? autoHistory.map(h => h.totalValue) : [])
+      .concat(benchHistory ? benchHistory.map(h => h.totalValue) : []);
     const minV = Math.min(...allValues) * 0.98;
     const maxV = Math.max(...allValues) * 1.02;
     const range = (maxV - minV) || 1;
-    const pointCount = Math.max(history.length, autoHistory ? autoHistory.length : 0);
+    const pointCount = Math.max(history.length, autoHistory ? autoHistory.length : 0, benchHistory ? benchHistory.length : 0);
 
     const xScale = (i) => pointCount > 1 ? padL + (i / (pointCount - 1)) * plotW : padL + plotW / 2;
     const yScale = (v) => padT + plotH - ((v - minV) / range) * plotH;
@@ -434,6 +463,10 @@
       const linePoints = autoHistory.map((h, i) => `${xScale(i)},${yScale(h.totalValue)}`).join(" ");
       parts += `<polyline class="value-line-auto" points="${linePoints}" />`;
     }
+    if (benchHistory && benchHistory.length > 1) {
+      const linePoints = benchHistory.map((h, i) => `${xScale(i)},${yScale(h.totalValue)}`).join(" ");
+      parts += `<polyline class="value-line-benchmark" points="${linePoints}" />`;
+    }
 
     history.forEach((h, i) => {
       parts += `<circle class="point" data-series="manual" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="4" />`;
@@ -443,11 +476,22 @@
         parts += `<circle class="point-auto" data-series="auto" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="4" />`;
       });
     }
+    if (benchHistory) {
+      benchHistory.forEach((h, i) => {
+        parts += `<circle class="point-benchmark" data-series="benchmark" data-idx="${i}" cx="${xScale(i)}" cy="${yScale(h.totalValue)}" r="3.5" />`;
+      });
+    }
 
     svg.innerHTML = parts;
 
-    svg.querySelectorAll("circle.point, circle.point-auto").forEach(c => {
+    svg.querySelectorAll("circle.point, circle.point-auto, circle.point-benchmark").forEach(c => {
       c.addEventListener("mousemove", (e) => {
+        if (c.dataset.series === "benchmark") {
+          const h = benchHistory[+c.dataset.idx];
+          showTooltip(e, `<b>${h.date} ・ ${DATA.benchmark.label}</b>
+            <div class="tt-row"><span>評価額</span><span>${fmt(h.totalValue)}円</span></div>`);
+          return;
+        }
         const src = c.dataset.series === "auto" ? autoHistory : history;
         const h = src[+c.dataset.idx];
         const label = c.dataset.series === "auto" ? "自動売買" : "バイ&ホールド";

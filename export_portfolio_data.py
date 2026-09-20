@@ -10,6 +10,9 @@
     資産推移の時系列(logs/portfolio_history.json, logs/portfolio_auto_history.json)
     をまとめて1つのJSON(logs/portfolio_dashboard_data.json)に出力する。
 
+    あわせて、バイ&ホールド組の開始時点と同額を「NISAでオルカンに入れていたら」の
+    推移(BENCHMARK_TICKER=2559.T代替、data["benchmark"])も計算して添える。
+
     generate_portfolio_dashboard.py がこのJSONを portfolio_dashboard_template.html
     に埋め込み、portfolio_dashboard.html を生成する。portfolio_auto.json が無い場合は
     バイ&ホールド組のみのダッシュボードになる。
@@ -30,6 +33,8 @@ import datetime as dt
 import json
 from pathlib import Path
 
+import yfinance as yf
+
 import console_utf8
 
 console_utf8.setup()
@@ -46,6 +51,13 @@ HISTORY_AUTO_PATH = LOG_DIR / "portfolio_auto_history.json"
 # rebalance.pyと揃える(こちらは表示用の参考値なので、実際の対象判定はrebalance.py側)
 MIN_SCORE = 45
 MAX_WEIGHT = 0.15
+
+# 「NISAでオルカン(eMAXIS Slim 全世界株式(オール・カントリー))を買っていたら」の比較用ベンチマーク。
+# オルカン自体(投資信託)の基準価額はyfinanceから安定して取得できないため、同じMSCI ACWIに
+# 連動する東証上場ETF「2559 MAXIS全世界株式(オール・カントリー)上場投信」を代替指標として使う。
+# 信託報酬もオルカンとほぼ同水準(年0.0576% vs 0.05775%)なので、長期の累積リターンはほぼ一致する想定。
+BENCHMARK_TICKER = "2559.T"
+BENCHMARK_LABEL = "オルカン(NISA想定, 2559.T代替)"
 
 
 def load_json(path: Path, default):
@@ -91,6 +103,49 @@ def build_portfolio_view(cash: float, holdings: dict[str, int], history: list, s
     }
 
 
+def fetch_benchmark_history(dates: list[str], start_value: float) -> list[dict] | None:
+    """dates の各日について、start_value を開始日にベンチマークへ全額投入していたら
+    その日の評価額がいくらになっているかを終値ベースで計算する。
+
+    取得失敗時(ネットワークエラー・銘柄コード変更など)はNoneを返し、呼び出し側は
+    ベンチマーク無しでダッシュボードを生成する(既存データの表示を止めない)。
+    """
+    if not dates:
+        return None
+    try:
+        start = min(dates)
+        end = (dt.date.fromisoformat(max(dates)) + dt.timedelta(days=1)).isoformat()
+        h = yf.Ticker(BENCHMARK_TICKER).history(start=start, end=end)
+        if h.empty:
+            print(f"[警告] ベンチマーク({BENCHMARK_TICKER})の終値が取得できませんでした")
+            return None
+        closes = {idx.strftime("%Y-%m-%d"): float(row["Close"]) for idx, row in h.iterrows()}
+    except Exception as e:
+        print(f"[警告] ベンチマーク({BENCHMARK_TICKER})の取得に失敗しました: {e}")
+        return None
+
+    sorted_close_dates = sorted(closes)
+    if not sorted_close_dates:
+        return None
+
+    def price_asof(d: str) -> float | None:
+        # d以前で最も近い終値を使う(祝日などでdその日の終値が無い場合に備える)
+        candidates = [cd for cd in sorted_close_dates if cd <= d]
+        return closes[candidates[-1]] if candidates else None
+
+    base_price = price_asof(dates[0])
+    if base_price is None:
+        return None
+
+    result = []
+    for d in dates:
+        price = price_asof(d)
+        if price is None:
+            continue
+        result.append({"date": d, "totalValue": round(start_value * price / base_price, 0)})
+    return result
+
+
 def main() -> None:
     if not PORTFOLIO_PATH.exists():
         print(f"{PORTFOLIO_PATH.name} が見つかりません。先に rebalance.py を実行してください。")
@@ -131,12 +186,28 @@ def main() -> None:
         )
         data["auto"] = auto_view
 
+    # バイ&ホールド組の開始時点(同額・同日でportfolio_auto.jsonも始めている前提)を基準に、
+    # 「同じ額をNISAでオルカンに入れていたら」の推移を計算して添える。
+    benchmark_dates = [h["date"] for h in manual_view["history"]]
+    benchmark_start_value = manual_view["history"][0]["totalValue"] if manual_view["history"] else manual_view["totalValue"]
+    if benchmark_dates:
+        benchmark_history = fetch_benchmark_history(benchmark_dates, benchmark_start_value)
+        if benchmark_history:
+            data["benchmark"] = {
+                "ticker": BENCHMARK_TICKER,
+                "label": BENCHMARK_LABEL,
+                "history": benchmark_history,
+            }
+
     LOG_DIR.mkdir(exist_ok=True)
     out_path = LOG_DIR / "portfolio_dashboard_data.json"
     out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     summary = f"バイ&ホールド {len(manual_view['holdings'])}銘柄・{manual_view['totalValue']:,.0f}円"
     if has_auto:
         summary += f" / 自動売買 {len(data['auto']['holdings'])}銘柄・{data['auto']['totalValue']:,.0f}円"
+    if "benchmark" in data:
+        bench_last = data["benchmark"]["history"][-1]["totalValue"]
+        summary += f" / {BENCHMARK_LABEL} {bench_last:,.0f}円"
     print(f"[保存しました] {out_path}  ({summary})")
 
 
