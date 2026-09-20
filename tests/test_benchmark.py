@@ -46,6 +46,20 @@ class BenchmarkTests(unittest.TestCase):
     def test_no_close_on_or_before_the_first_date_returns_none(self):
         self.assertIsNone(self.fetch({"2026-09-15": 100.0}, ["2026-09-09", "2026-09-15"]))
 
+    def test_unadjusted_split_discontinuity_returns_none_instead_of_a_fake_crash(self):
+        # 2559.T(2026年6月)のように分割が未調整のまま混入すると 30,357→3,045 と日次-90%になる
+        closes = {"2026-06-03": 30_357.0, "2026-06-04": 30_400.0, "2026-06-05": 3_045.0, "2026-06-08": 3_050.0}
+        self.assertIsNone(self.fetch(closes, list(closes)))
+
+    def test_ordinary_large_daily_move_is_still_plotted(self):
+        closes = {"2026-09-09": 100.0, "2026-09-10": 92.0}   # -8%: 暴落日でも比較線は出す
+        self.assertIsNotNone(self.fetch(closes, list(closes)))
+
+    def test_split_outside_the_requested_window_is_ignored(self):
+        closes = {"2026-06-03": 30_357.0, "2026-06-05": 3_045.0, "2026-09-09": 3_000.0, "2026-09-10": 3_030.0}
+        r = self.fetch(closes, ["2026-09-09", "2026-09-10"])
+        self.assertEqual([p["totalValue"] for p in r], [300_000, 303_000])
+
     def test_no_dates_returns_none(self):
         self.assertIsNone(epd.fetch_benchmark_history([], 300_000))
 

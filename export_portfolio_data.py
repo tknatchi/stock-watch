@@ -58,6 +58,7 @@ MAX_WEIGHT = 0.15
 # 信託報酬もオルカンとほぼ同水準(年0.0576% vs 0.05775%)なので、長期の累積リターンはほぼ一致する想定。
 BENCHMARK_TICKER = "2559.T"
 BENCHMARK_LABEL = "オルカン(NISA想定, 2559.T代替)"
+BENCHMARK_MAX_DAILY_MOVE = 0.25   # これを超える日次変動は分割未調整などのデータ異常とみなす
 
 
 def load_json(path: Path, default):
@@ -127,6 +128,15 @@ def fetch_benchmark_history(dates: list[str], start_value: float) -> list[dict] 
     sorted_close_dates = sorted(closes)
     if not sorted_close_dates:
         return None
+
+    # yfinanceは分割が未調整のまま混ざることがある(2559.Tは2026年6月に日次-90%が出ていた)。
+    # 全世界株ETFが1日でこれほど動くことはないので、対象期間内にあれば偽の暴落を描かずに諦める。
+    window = [d for d in sorted_close_dates if min(dates) <= d <= max(dates)]
+    for prev, cur in zip(window, window[1:]):
+        if abs(closes[cur] / closes[prev] - 1) > BENCHMARK_MAX_DAILY_MOVE:
+            print(f"[警告] ベンチマーク({BENCHMARK_TICKER})に日次{(closes[cur] / closes[prev] - 1) * 100:+.0f}%の不連続({prev}→{cur})があり、"
+                  f"分割の未調整データの可能性があるため比較線を出しません")
+            return None
 
     def price_asof(d: str) -> float | None:
         # d以前で最も近い終値を使う(祝日などでdその日の終値が無い場合に備える)
