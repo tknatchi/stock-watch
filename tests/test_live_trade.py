@@ -264,6 +264,31 @@ class ExecutionTests(LiveBase):
         self.assertEqual(st["cooldown"][A], live_trade.rebalance_auto.STOP_LOSS_COOLDOWN_RUNS)
         self.assertTrue(self.env.ledger._load()[0]["stop_loss"])
 
+    def test_fills_start_round_trip_locks_but_stop_losses_do_not(self):
+        self.run_once(self.cfg(), self.broker())
+        lock = self.state()["tradeLock"]
+        self.assertEqual({t: v["side"] for t, v in lock.items()}, {A: "buy", B: "buy"})
+
+        write_state(self.env, holdings={A: 10}, cost_basis={A: 1000.0}, last_cash=50_000)
+        self.env.ledger._save([])
+        self.run_once(self.cfg(), self.broker(cash=50_000, positions={A: 10}), snaps=[snap(A, 800, 80)])  # 損切り
+        self.assertNotIn(A, self.state()["tradeLock"])
+
+    def test_locks_tick_down_each_run_and_expire(self):
+        write_state(self.env, last_cash=100_000)
+        st = self.state(); st["tradeLock"] = {"X.T": {"side": "buy", "runs": 2}, "Y.T": {"side": "sell", "runs": 1}}
+        live_trade.save_state(self.env, st)
+        self.run_once(self.cfg(mode="notify"), self.broker(), snaps=[snap("Z.T", 100, 10)])  # 提案なし
+        self.assertEqual(self.state()["tradeLock"], {"X.T": {"side": "buy", "runs": 1}})
+
+    def test_recently_bought_overweight_position_is_not_sold_back(self):
+        write_state(self.env, holdings={A: 100}, cost_basis={A: 1000.0}, last_cash=0)
+        st = self.state(); st["tradeLock"] = {A: {"side": "buy", "runs": 4}}
+        live_trade.save_state(self.env, st)
+        b = self.broker(cash=0, positions={A: 100})
+        self.run_once(self.cfg(), b, snaps=[snap(A, 1000, 90), snap(B, 200, 10)])   # 100%集中→通常なら売る
+        self.assertEqual(b.sent, [])
+
     def test_circuit_breaker_halts_after_repeated_stop_losses(self):
         for i, t in enumerate(("X.T", "Y.T")):
             key = f"2026-09-15:{t}:sell"

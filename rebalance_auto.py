@@ -37,6 +37,15 @@
     おおむね営業日数に相当)は新規の買い候補から除外する。portfolio_auto.jsonの
     cooldownフィールドで残り回数を管理し、実行のたびに1減らして0になったら解除する。
     まずは推奨値(10営業日)で運用し、様子を見ながら調整する想定。
+
+往復ロックについて(2026-09-20追加):
+    実際のログで「売った数日後に買い戻す」「買った翌日に売り戻す」往復が頻発していた
+    (2026-05-28〜09-18の再生で、80営業日の売買代金が初期資金の約22倍)。対策として、
+    損切り以外の売買をした銘柄は ROUND_TRIP_LOCK_RUNS 回の実行の間、反対方向の売買を止める
+    (portfolio_auto.json の tradeLock で管理)。あわせて rebalance.greedy_lot_allocation を
+    「買った直後に売り戻しが発動するほど上限を超える買いはしない」ように直した。
+    同じ再生で売買代金は約55%減った(リターンへの影響は1標本では判別できない)。
+    ロックを止めたいときは ROUND_TRIP_LOCK_RUNS = 0。
 """
 
 from __future__ import annotations
@@ -68,6 +77,65 @@ SLIPPAGE_RATE = 0.0
 COMMISSION_RATE = 0.0
 ASSUMED_COST_RATE = 0.001
 
+# 往復売買の抑止(2026-09-20追加): 裁量売買(損切り以外)をした銘柄は、この回数の実行の間、
+# 反対方向の売買をしない(買った銘柄は売らない・売った銘柄は買わない)。スコアが日々揺れて
+# 「売った数日後に買い戻す」往復が実際のログで頻発していたため。0で無効。損切りは対象外。
+ROUND_TRIP_LOCK_RUNS = 5
+
+
+def tick_locks(locks: dict[str, dict]) -> dict[str, dict]:
+    """実行のたびに残り回数を1消化し、0になったものを外す。"""
+    return {t: {"side": v["side"], "runs": v["runs"] - 1} for t, v in locks.items() if v["runs"] - 1 > 0}
+
+
+def lock_sets(locks: dict[str, dict]) -> tuple[set[str], set[str]]:
+    """(買い禁止の銘柄集合, 売り禁止の銘柄集合)。直前に売った銘柄は買い禁止、買った銘柄は売り禁止。"""
+    no_buy = {t for t, v in locks.items() if v["side"] == "sell"}
+    no_sell = {t for t, v in locks.items() if v["side"] == "buy"}
+    return no_buy, no_sell
+
+
+def apply_trades(
+    rows: list[dict],
+    holdings: dict[str, int],
+    cost_basis: dict[str, float],
+    cooldown: dict[str, int],
+    trade_lock: dict[str, dict],
+    lock_runs: int | None = None,
+) -> list[dict]:
+    """compute_plan の rows のうち売買がある行を holdings / cost_basis / cooldown / trade_lock に
+    その場で適用し、適用した行を返す。損切りはクールダウン、それ以外は往復ロックを開始する。"""
+    lock_runs = ROUND_TRIP_LOCK_RUNS if lock_runs is None else lock_runs
+    applied = []
+    for r in rows:
+        if r["action_shares"] == 0:
+            continue
+        applied.append(r)
+        ticker = r["ticker"]
+        old_shares = holdings.get(ticker, 0)
+        new_shares = old_shares + r["action_shares"]
+
+        if r["action_shares"] > 0:
+            # 買い増し: 加重平均で取得単価を更新(新規建ての場合はそのまま今回の価格)
+            old_basis = cost_basis.get(ticker, r["price"])
+            new_basis = (old_shares * old_basis + r["action_shares"] * r["price"]) / new_shares if new_shares else r["price"]
+            cost_basis[ticker] = round(new_basis, 2)
+
+        if new_shares <= 0:
+            holdings.pop(ticker, None)
+            cost_basis.pop(ticker, None)  # 全売却したら取得単価もリセット
+        else:
+            holdings[ticker] = new_shares
+
+        if r["stop_loss"]:
+            # 損切りした銘柄はクールダウンを開始(今回の実行分は消化済み扱いにしないので、
+            # 次回実行時の1回目の減算からカウントが始まる)
+            cooldown[ticker] = STOP_LOSS_COOLDOWN_RUNS
+        elif lock_runs > 0:
+            # 次のlock_runs回の実行で反対売買を止める(+1は、次回実行冒頭の消化ぶん)
+            trade_lock[ticker] = {"side": "buy" if r["action_shares"] > 0 else "sell", "runs": lock_runs + 1}
+    return applied
+
 
 def main() -> None:
     if not PORTFOLIO_AUTO_PATH.exists():
@@ -87,6 +155,7 @@ def main() -> None:
     cooldown: dict[str, int] = {
         t: d - 1 for t, d in dict(portfolio.get("cooldown", {})).items() if d - 1 > 0
     }
+    trade_lock = tick_locks(portfolio.get("tradeLock", {}))
 
     snapshots = rb.fetch_universe_snapshots(holdings)
     if not snapshots:
@@ -116,7 +185,8 @@ def main() -> None:
             )
             next_action_check = today.isoformat()
 
-    plan = rb.compute_plan(cash, holdings, snapshots, cost_basis, set(cooldown))
+    no_buy, no_sell = lock_sets(trade_lock)
+    plan = rb.compute_plan(cash, holdings, snapshots, cost_basis, set(cooldown), no_buy, no_sell)
     if plan["total_value"] <= 0:
         print("現金・保有評価額がともに0円のため計算できません。portfolio_auto.json を確認してください。")
         return
@@ -150,38 +220,14 @@ def main() -> None:
 
     # rebalance.py の提案(rows の action_shares)をそのまま全部適用する
     # (損切り対象行は compute_plan 側で action_shares=-保有数 に強制済み)
-    traded = False
-    traded_notional = 0.0
-    for r in plan["rows"]:
-        if r["action_shares"] == 0:
-            continue
-        traded = True
-        traded_notional += abs(r["action_shares"]) * r["price"]
-        ticker = r["ticker"]
-        old_shares = holdings.get(ticker, 0)
-        new_shares = old_shares + r["action_shares"]
-
-        if r["action_shares"] > 0:
-            # 買い増し: 加重平均で取得単価を更新(新規建ての場合はそのまま今回の価格)
-            old_basis = cost_basis.get(ticker, r["price"])
-            new_basis = (old_shares * old_basis + r["action_shares"] * r["price"]) / new_shares if new_shares else r["price"]
-            cost_basis[ticker] = round(new_basis, 2)
-
-        if new_shares <= 0:
-            holdings.pop(ticker, None)
-            cost_basis.pop(ticker, None)  # 全売却したら取得単価もリセット
-        else:
-            holdings[ticker] = new_shares
-
+    applied = apply_trades(plan["rows"], holdings, cost_basis, cooldown, trade_lock)
+    traded = bool(applied)
+    traded_notional = sum(abs(r["action_shares"]) * r["price"] for r in applied)
+    for r in applied:
         verb = "買い増し" if r["action_shares"] > 0 else "売却"
         tag = " [損切り]" if r["stop_loss"] else ""
         cost = abs(r["action_shares"]) * r["price"]
         emit(f"[{r['ticker']}] {r['name']}: {verb} {abs(r['action_shares'])}株（概算 {cost:,.0f}円）{tag}")
-
-        if r["stop_loss"]:
-            # 損切りした銘柄はクールダウンを開始(今回の実行分は消化済み扱いにしないので、
-            # 次回実行時の1回目の減算からカウントが始まる)
-            cooldown[ticker] = STOP_LOSS_COOLDOWN_RUNS
 
     trading_cost = traded_notional * (SLIPPAGE_RATE + COMMISSION_RATE)
     new_cash = plan["leftover_cash"] - trading_cost
@@ -200,6 +246,11 @@ def main() -> None:
     if cooldown_rows:
         emit()
         emit("（クールダウン中につき買い候補から除外: " + "、".join(f"{r['ticker']}({r['name']})" for r in cooldown_rows) + "）")
+    locked_rows = [r for r in plan["rows"] if r.get("locked")]
+    if locked_rows:
+        emit()
+        emit("（往復ロック中につき見送り: " + "、".join(
+            f"{r['ticker']}({r['name']}・{'売り' if r['locked'] == 'sell' else '買い'})" for r in locked_rows) + "）")
 
     emit()
     emit(f"実行後: 現金 {new_cash:,.0f}円 + 保有評価額 {total_after - new_cash:,.0f}円 "
@@ -214,6 +265,7 @@ def main() -> None:
                 "holdings": holdings,
                 "costBasis": cost_basis,
                 "cooldown": cooldown,
+                "tradeLock": trade_lock,
                 "lastActionCheck": next_action_check,
             },
             ensure_ascii=False,

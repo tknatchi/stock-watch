@@ -140,6 +140,14 @@ def apply_fill(state: dict, ticker: str, side: str, qty: int, price: float | Non
             holdings[ticker] = new
 
 
+def note_trade(state: dict, ticker: str, side: str, stop_loss: bool) -> None:
+    """約定した売買を記録する。損切りはクールダウン、それ以外は往復ロック(反対売買の抑止)を開始。"""
+    if stop_loss and side == "sell":
+        state.setdefault("cooldown", {})[ticker] = rebalance_auto.STOP_LOSS_COOLDOWN_RUNS
+    elif not stop_loss and rebalance_auto.ROUND_TRIP_LOCK_RUNS > 0:
+        state.setdefault("tradeLock", {})[ticker] = {"side": side, "runs": rebalance_auto.ROUND_TRIP_LOCK_RUNS + 1}
+
+
 def adopt_broker_state(state: dict, positions: dict[str, Position], cash: float) -> None:
     """証券会社の実残高を正として状態を上書きする(notifyモード・init用)。取得単価は分かるものだけ更新。"""
     old_basis = state.get("costBasis", {})
@@ -202,6 +210,7 @@ def settle_working_orders(broker: Broker, env: Env, state: dict) -> list[str]:
         delta = res.filled_qty - int(e.get("applied_qty", 0))
         if delta > 0:
             apply_fill(state, e["ticker"], e["side"], delta, res.avg_price)
+            note_trade(state, e["ticker"], e["side"], bool(e.get("stop_loss")))
             notes.append(f"{e['key']}: 遅れて{delta}株約定")
         new_status = "WORKING" if res.status == "SUBMITTED" else res.status
         env.ledger.update(e["key"], status=new_status, filled_qty=res.filled_qty, applied_qty=res.filled_qty)
@@ -239,8 +248,7 @@ def execute_orders(orders: list[OrderRequest], cfg: TradingConfig, broker: Broke
         env.ledger.update(key, status=status, order_id=res.order_id, filled_qty=res.filled_qty, applied_qty=res.filled_qty)
         if res.filled_qty > 0:
             apply_fill(state, o.ticker, o.side, res.filled_qty, res.avg_price)
-            if o.stop_loss and o.side == "sell":
-                state.setdefault("cooldown", {})[o.ticker] = rebalance_auto.STOP_LOSS_COOLDOWN_RUNS
+            note_trade(state, o.ticker, o.side, o.stop_loss)
         verb = "買い" if o.side == "buy" else "売り"
         lines.append(f"[{o.ticker}] {verb}{o.qty}株 指値{o.limit_price:,.0f}円 → {status}(約定{res.filled_qty}株)")
     return lines
@@ -327,6 +335,8 @@ def run_once(cfg: TradingConfig, broker: Broker, env: Env, now: dt.datetime, *,
     holdings = dict(state.get("holdings", {}))
     cost_basis = dict(state.get("costBasis", {}))
     cooldown = {t: d - 1 for t, d in state.get("cooldown", {}).items() if d - 1 > 0}
+    trade_lock = rebalance_auto.tick_locks(state.get("tradeLock", {}))
+    no_buy, no_sell = rebalance_auto.lock_sets(trade_lock)
 
     snapshots = fetch_snapshots(holdings)
     missing = rb.find_missing_holdings(holdings, snapshots)
@@ -340,13 +350,14 @@ def run_once(cfg: TradingConfig, broker: Broker, env: Env, now: dt.datetime, *,
     price = {s.ticker: s.price for s in snapshots}
     managed_value = sum(n * price[t] for t, n in holdings.items())
     available = max(0.0, min(cash, cfg.capital_limit - managed_value))
-    plan = rb.compute_plan(available, holdings, snapshots, cost_basis, set(cooldown))
+    plan = rb.compute_plan(available, holdings, snapshots, cost_basis, set(cooldown), no_buy, no_sell)
     action_rows = [r for r in plan["rows"] if r["action_shares"] != 0]
     quotes = fetch_quotes(broker, [r["ticker"] for r in action_rows])
     guard = build_orders(action_rows, quotes=quotes, cash=available, holdings=holdings,
                          total_value=plan["total_value"], cfg=cfg, ledger=env.ledger, today=today)
 
     state["cooldown"] = cooldown
+    state["tradeLock"] = trade_lock
     summary = {"status": "ok", "orders": guard.orders, "rejected": guard.rejected, "notes": notes, "mode": cfg.mode}
     header = f"【自動売買・{cfg.mode}】{now:%Y-%m-%d %H:%M}"
 

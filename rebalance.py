@@ -84,7 +84,7 @@ LOT_SIZE = 1
 
 
 def greedy_lot_allocation(
-    candidates: list[dict], available_cash: float, lot_size: int
+    candidates: list[dict], available_cash: float, lot_size: int, max_overweight_value: float | None = None
 ) -> tuple[dict[str, int], float]:
     """買い候補にスコア優先で単元株を割り当てる。
 
@@ -92,6 +92,11 @@ def greedy_lot_allocation(
     cap(目標評価額)より1単元のコストの方が高い銘柄でも、最初の1単元だけは
     (予算が許せば)買うことを許可する。2単元目以降はcapを超えない範囲に制限する。
     これにより、少額予算で目標額が小さい銘柄ばかりになっても「何も買えない」状態を避ける。
+
+    max_overweight_value(円)を渡すと、最初の1単元でも「買った結果がcapをこの金額より
+    超過する」場合は買わない。compute_plan は売りの発動条件(乖離がDRIFT_THRESHOLD以上)と
+    同じ値を渡す。これがないと、値がさ株を上限超過で買った直後の実行で売り戻しが発動し、
+    株価が変わらなくても「買う→翌日売る」の往復が起きる。
 
     戻り値: (ticker → 追加で買う株数, 残余現金)
     """
@@ -101,6 +106,10 @@ def greedy_lot_allocation(
     for c in sorted(candidates, key=lambda c: -c["score"]):
         lot_cost = c["price"] * lot_size
         if lot_cost <= 0 or lot_cost > cash:
+            continue
+        if c["current_value"] > 0 and c["current_value"] + lot_cost > c["cap"]:
+            continue  # 既に保有している銘柄は、1単元足すだけで上限を超えるなら買い足さない(例外は新規建てのみ)
+        if max_overweight_value is not None and c["current_value"] + lot_cost - c["cap"] > max_overweight_value:
             continue
 
         additional_shares[c["ticker"]] += lot_size  # 最初の1単元は無条件で許可
@@ -159,6 +168,8 @@ def compute_plan(
     snapshots: list,
     cost_basis: dict[str, float] | None = None,
     cooldown_tickers: set[str] | None = None,
+    no_buy_tickers: set[str] | None = None,
+    no_sell_tickers: set[str] | None = None,
 ) -> dict:
     """現金・保有株数・現在の銘柄スナップショットから、リバランスの計算結果を返す。
 
@@ -174,6 +185,11 @@ def compute_plan(
     即座に買い戻してしまう問題への対策)。呼び出し元(rebalance_auto.py)が
     日数を管理し、期限が切れた銘柄は呼び出し前に集合から除いておくこと。
 
+    no_buy_tickers / no_sell_tickers: 往復売買の抑止(直前に売った銘柄は買わない・直前に
+    買った銘柄は売らない)。スコアの日々の揺れに反応して「売った数日後に買い戻す」ような
+    往復を防ぐ。損切りは対象外(no_sell_tickersに入っていても損切りは実行される)。
+    該当行は "locked": "buy" / "sell" になる。呼び出し元が期間を管理する。
+
     戻り値: {
         "total_value", "holdings_value", "rows"(銘柄ごとの現在値・目標値・提案株数。
         損切り対象行は "stop_loss": True, "loss_pct" を、クールダウン中の行は
@@ -184,6 +200,8 @@ def compute_plan(
     """
     cost_basis = cost_basis or {}
     cooldown_tickers = cooldown_tickers or set()
+    no_buy_tickers = no_buy_tickers or set()
+    no_sell_tickers = no_sell_tickers or set()
     target_weights = compute_target_weights(snapshots, min_score=MIN_SCORE, max_weight=MAX_WEIGHT)
     holdings_value = sum(holdings.get(s.ticker, 0) * s.price for s in snapshots)
     total_value = cash + holdings_value
@@ -231,6 +249,7 @@ def compute_plan(
             "loss_pct": loss_pct,
             "stop_loss": stop_loss,
             "cooldown": in_cooldown,
+            "locked": None,
         }
         rows[s.ticker] = row
 
@@ -245,6 +264,13 @@ def compute_plan(
             continue
 
         if abs(drift_ratio) < DRIFT_THRESHOLD:
+            continue
+
+        if drift_value < 0 and s.ticker in no_sell_tickers:
+            row["locked"] = "sell"
+            continue
+        if drift_value > 0 and s.ticker in no_buy_tickers:
+            row["locked"] = "buy"
             continue
 
         if drift_value < 0:
@@ -270,7 +296,9 @@ def compute_plan(
             )
 
     available_cash = cash + freed_cash
-    additional_shares, leftover_cash = greedy_lot_allocation(buy_candidates, available_cash, LOT_SIZE)
+    additional_shares, leftover_cash = greedy_lot_allocation(
+        buy_candidates, available_cash, LOT_SIZE, max_overweight_value=DRIFT_THRESHOLD * total_value
+    )
     for ticker, shares in additional_shares.items():
         if shares > 0:
             rows[ticker]["action_shares"] = shares

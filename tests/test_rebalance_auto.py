@@ -126,6 +126,59 @@ class RebalanceAutoTests(unittest.TestCase):
         self.assertAlmostEqual(st0["cash"] - st1["cash"], traded * 0.01, delta=0.01)
         self.assertAlmostEqual(total0 - total1, traded * 0.01, delta=1.0)
 
+    def test_tick_locks_counts_down_and_drops_expired_entries(self):
+        locks = {"A": {"side": "buy", "runs": 3}, "B": {"side": "sell", "runs": 1}}
+        self.assertEqual(ra.tick_locks(locks), {"A": {"side": "buy", "runs": 2}})
+        self.assertEqual(locks["A"]["runs"], 3)   # 入力は書き換えない
+
+    def test_lock_sets_map_last_side_to_the_blocked_opposite_side(self):
+        no_buy, no_sell = ra.lock_sets({"A": {"side": "sell", "runs": 2}, "B": {"side": "buy", "runs": 2}})
+        self.assertEqual((no_buy, no_sell), ({"A"}, {"B"}))
+
+    @staticmethod
+    def row(ticker, shares, stop_loss=False, price=1000.0):
+        return {"ticker": ticker, "action_shares": shares, "price": price, "stop_loss": stop_loss}
+
+    def test_discretionary_trades_start_a_lock_but_stop_losses_start_a_cooldown_instead(self):
+        holdings, basis, cooldown, lock = {"B": 5}, {"B": 1000.0}, {}, {}
+        ra.apply_trades([self.row("A", 3), self.row("B", -5, stop_loss=True)], holdings, basis, cooldown, lock, lock_runs=5)
+        self.assertEqual(lock, {"A": {"side": "buy", "runs": 6}})
+        self.assertEqual(cooldown, {"B": ra.STOP_LOSS_COOLDOWN_RUNS})
+
+    def test_lock_runs_zero_disables_the_lock(self):
+        lock = {}
+        ra.apply_trades([self.row("A", 3)], {}, {}, {}, lock, lock_runs=0)
+        self.assertEqual(lock, {})
+
+    def test_lock_blocks_the_opposite_side_for_exactly_lock_runs_runs(self):
+        lock = {}
+        ra.apply_trades([self.row("A", 3)], {}, {}, {}, lock, lock_runs=3)
+        blocked_runs = 0
+        for _ in range(6):
+            lock = ra.tick_locks(lock)
+            if "A" in ra.lock_sets(lock)[1]:   # no_sell
+                blocked_runs += 1
+        self.assertEqual(blocked_runs, 3)
+
+    def test_apply_trades_updates_holdings_and_weighted_cost_basis(self):
+        holdings, basis = {"A": 10}, {"A": 1000.0}
+        ra.apply_trades([self.row("A", 10, price=2000.0)], holdings, basis, {}, {}, lock_runs=0)
+        self.assertEqual((holdings["A"], basis["A"]), (20, 1500.0))
+
+    def test_main_persists_the_lock_and_ticks_it_down_on_the_next_run(self):
+        self.write(cash=100_000.0, lastActionCheck=TODAY.isoformat())
+        self.run_main([snap(A, 1000, 90), snap("9432.T", 500, 80)])
+        first = self.read()["tradeLock"]
+        self.assertEqual(first[A], {"side": "buy", "runs": ra.ROUND_TRIP_LOCK_RUNS + 1})
+        self.run_main([snap(A, 1000, 90), snap("9432.T", 500, 80)])
+        self.assertEqual(self.read()["tradeLock"][A]["runs"], ra.ROUND_TRIP_LOCK_RUNS)
+
+    def test_main_does_not_sell_back_a_ticker_bought_within_the_lock_window(self):
+        self.write(holdings={A: 100}, costBasis={A: 1000.0}, cash=0.0, lastActionCheck=TODAY.isoformat(),
+                   tradeLock={A: {"side": "buy", "runs": 4}})
+        self.run_main([snap(A, 1000, 90), snap("9432.T", 500, 10)])   # 100%集中→通常なら大きく売る
+        self.assertEqual(self.read()["holdings"][A], 100)
+
     def test_zero_cost_default_keeps_previous_numbers(self):
         self.assertEqual((ra.SLIPPAGE_RATE, ra.COMMISSION_RATE), (0.0, 0.0))
 
