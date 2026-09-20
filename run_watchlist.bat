@@ -30,3 +30,7 @@ if exist dashboard.html if exist portfolio_dashboard.html python generate_combin
 
 if exist portfolio.json python rebalance.py >> logs\run_history.log 2>&1
 if exist portfolio_auto.json python rebalance_auto.py >> logs\run_history.log 2>&1
+
+rem 実発注(通知/承認/自動): trading_config.json と portfolio_live.json が揃っているときだけ実行。
+rem 既定の設定(mode=notify)ではLINEに提案を送るだけで発注はしない。詳細は live_trade.py の冒頭を参照。
+if exist trading_config.json if exist portfolio_live.json python live_trade.py run >> logsun_history.log 2>&1

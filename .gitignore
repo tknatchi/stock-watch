@@ -11,3 +11,8 @@ __pycache__/
 portfolio.json
 portfolio_auto.json
 portfolio_dashboard.html
+
+# 実発注まわり: 口座の状態・設定・kill switch はコミットしない(秘密情報は環境変数で渡す)
+trading_config.json
+portfolio_live.json
+STOP_TRADING

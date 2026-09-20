@@ -46,6 +46,7 @@ import json
 from pathlib import Path
 
 import console_utf8
+import corporate_actions
 import rebalance as rb
 from line_alert import send_line_alert
 from watchlist import LOG_DIR
@@ -59,6 +60,13 @@ HISTORY_AUTO_PATH = LOG_DIR / "portfolio_auto_history.json"
 # 損切り後のクールダウン期間(このスクリプトの実行回数ベース。日次実行前提)。
 # 推奨値として10営業日(約2週間)からスタートし、様子を見て調整する。
 STOP_LOSS_COOLDOWN_RUNS = 10
+
+# 売買コスト(売買代金に対する片道の比率)。既存の比較実験の連続性を保つため既定は0。
+# 実弾では手数料・スプレッド・スリッページで売買のたびに目減りするので、現実に近づけたい
+# ときは 0.001(=0.1%)などに変える。0のままでも、ログには「0.1%と仮定した場合の目安」を出す。
+SLIPPAGE_RATE = 0.0
+COMMISSION_RATE = 0.0
+ASSUMED_COST_RATE = 0.001
 
 
 def main() -> None:
@@ -85,6 +93,29 @@ def main() -> None:
         print("銘柄データを取得できませんでした。")
         return
 
+    missing = rb.find_missing_holdings(holdings, snapshots)
+    if missing:
+        print(f"保有銘柄の株価を取得できませんでした({', '.join(missing)})。総資産を誤って計算するため、今回の売買・記録は見送ります。")
+        return
+
+    # 配当・株式分割の反映。初回は遡及せず基準日だけ記録する。取得に失敗したら基準日を
+    # 進めず、次回の実行で取りこぼしなく再挑戦する。
+    today = dt.date.today()
+    action_events: list[str] = []
+    next_action_check = portfolio.get("lastActionCheck")
+    if next_action_check is None:
+        next_action_check = today.isoformat()
+    else:
+        try:
+            actions = {t: corporate_actions.fetch_actions(t) for t in holdings}
+        except Exception as e:
+            print(f"[警告] 配当・分割情報の取得に失敗したため今回は反映を見送ります: {e}")
+        else:
+            holdings, cost_basis, cash, action_events = corporate_actions.apply_actions(
+                holdings, cost_basis, cash, actions, dt.date.fromisoformat(next_action_check), today
+            )
+            next_action_check = today.isoformat()
+
     plan = rb.compute_plan(cash, holdings, snapshots, cost_basis, set(cooldown))
     if plan["total_value"] <= 0:
         print("現金・保有評価額がともに0円のため計算できません。portfolio_auto.json を確認してください。")
@@ -96,6 +127,12 @@ def main() -> None:
     def emit(line: str = "") -> None:
         lines.append(line)
         print(line)
+
+    if action_events:
+        emit("配当・株式分割を反映しました:")
+        for ev in action_events:
+            emit(f"  {ev}")
+        emit()
 
     emit(f"実行前: 現金 {cash:,.0f}円 + 保有評価額 {plan['holdings_value']:,.0f}円 "
          f"= 合計 {plan['total_value']:,.0f}円")
@@ -114,10 +151,12 @@ def main() -> None:
     # rebalance.py の提案(rows の action_shares)をそのまま全部適用する
     # (損切り対象行は compute_plan 側で action_shares=-保有数 に強制済み)
     traded = False
+    traded_notional = 0.0
     for r in plan["rows"]:
         if r["action_shares"] == 0:
             continue
         traded = True
+        traded_notional += abs(r["action_shares"]) * r["price"]
         ticker = r["ticker"]
         old_shares = holdings.get(ticker, 0)
         new_shares = old_shares + r["action_shares"]
@@ -144,10 +183,18 @@ def main() -> None:
             # 次回実行時の1回目の減算からカウントが始まる)
             cooldown[ticker] = STOP_LOSS_COOLDOWN_RUNS
 
-    new_cash = plan["leftover_cash"]
+    trading_cost = traded_notional * (SLIPPAGE_RATE + COMMISSION_RATE)
+    new_cash = plan["leftover_cash"] - trading_cost
+    total_after = plan["total_value"] - trading_cost
 
     if not traded:
         emit("本日の売買はありませんでした（目標比率とのズレがしきい値未満）。")
+    else:
+        emit()
+        emit(f"売買代金 {traded_notional:,.0f}円 / 売買コスト {trading_cost:,.0f}円"
+             f"（参考: コスト{ASSUMED_COST_RATE*100:.1f}%と仮定すると {traded_notional * ASSUMED_COST_RATE:,.0f}円）")
+        if new_cash < 0:
+            emit(f"[警告] コスト控除後の現金がマイナス({new_cash:,.0f}円)になりました。")
 
     cooldown_rows = [r for r in plan["rows"] if r.get("cooldown")]
     if cooldown_rows:
@@ -155,21 +202,27 @@ def main() -> None:
         emit("（クールダウン中につき買い候補から除外: " + "、".join(f"{r['ticker']}({r['name']})" for r in cooldown_rows) + "）")
 
     emit()
-    emit(f"実行後: 現金 {new_cash:,.0f}円 + 保有評価額 {plan['total_value'] - new_cash:,.0f}円 "
-         f"= 合計 {plan['total_value']:,.0f}円")
+    emit(f"実行後: 現金 {new_cash:,.0f}円 + 保有評価額 {total_after - new_cash:,.0f}円 "
+         f"= 合計 {total_after:,.0f}円")
     emit()
     emit("※完全な仮想シミュレーションです。実際の資金は一切動いていません。")
 
     PORTFOLIO_AUTO_PATH.write_text(
         json.dumps(
-            {"cash": round(new_cash, 2), "holdings": holdings, "costBasis": cost_basis, "cooldown": cooldown},
+            {
+                "cash": round(new_cash, 2),
+                "holdings": holdings,
+                "costBasis": cost_basis,
+                "cooldown": cooldown,
+                "lastActionCheck": next_action_check,
+            },
             ensure_ascii=False,
             indent=2,
         ),
         encoding="utf-8",
     )
 
-    rb.record_history(now, new_cash, plan["total_value"] - new_cash, plan["total_value"], path=HISTORY_AUTO_PATH)
+    rb.record_history(now, new_cash, total_after - new_cash, total_after, path=HISTORY_AUTO_PATH)
 
     LOG_DIR.mkdir(exist_ok=True)
     log_file = LOG_DIR / f"rebalance_auto_{now:%Y-%m-%d}.txt"

@@ -45,6 +45,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import math
+import time
 from pathlib import Path
 
 import console_utf8
@@ -285,10 +286,39 @@ def compute_plan(
     }
 
 
+def fetch_snapshot_with_retry(ticker: str, retries: int = 3, base_delay: float = 2.0, fetch=None):
+    """fetch_snapshot を例外・空データに備えてリトライする(指数バックオフ)。失敗し続けたらNone。
+
+    yfinanceは非公式スクレイピングで、レート制限や一時的な失敗が起きうる。1銘柄の失敗で
+    全体を落とさず、かといって黙って欠損させもしない(欠損は呼び出し側が検知する)。
+    """
+    fetch = fetch or fetch_snapshot
+    for attempt in range(retries):
+        try:
+            snap = fetch(ticker)
+            if snap is not None:
+                return snap
+        except Exception as e:  # yfinance/ネットワーク由来の例外は種類が多いので広く捕まえる
+            print(f"  [警告] {ticker}: 取得エラー({attempt + 1}/{retries}回目): {e}")
+        if attempt < retries - 1:
+            time.sleep(base_delay * (2 ** attempt))
+    return None
+
+
 def fetch_universe_snapshots(holdings: dict[str, int]) -> list:
     """WATCHLIST(監視銘柄) + 実際に保有している銘柄(監視外でもよい)をまとめて取得する。"""
     universe = sorted(set(WATCHLIST) | set(holdings.keys()))
-    return [s for s in (fetch_snapshot(t) for t in universe) if s is not None]
+    return [s for s in (fetch_snapshot_with_retry(t) for t in universe) if s is not None]
+
+
+def find_missing_holdings(holdings: dict[str, int], snapshots: list) -> list[str]:
+    """保有しているのに株価スナップショットを取得できなかった銘柄。
+
+    これが1つでもあると compute_plan の総資産が過小評価になり、誤った売買提案になる
+    (保有分の評価額が0円扱いになるため)。自動売買側はこの場合、その回の売買を見送る。
+    """
+    have = {s.ticker for s in snapshots}
+    return sorted(t for t, n in holdings.items() if n > 0 and t not in have)
 
 
 def main() -> None:
