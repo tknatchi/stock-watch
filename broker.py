@@ -5,8 +5,9 @@
 - KabuStationBroker: auカブコム証券 kabuステーションAPI(REST)。
 
 KabuStationBroker について(重要):
-    エンドポイント・パラメータは公式仕様に基づいて書いてあるが、実機(口座・kabuステーション)
-    での動作は未検証。テストは自前のフェイクHTTPサーバに対してのみ行っている。
+    エンドポイント・パラメータは公式のOpenAPI定義(kabucom/kabusapi の kabu_STATION_API.yaml, v1.5)と
+    突き合わせて確認済み(2026-09-20)。ただし実機(口座・kabuステーション)での動作は未検証で、
+    テストは公式仕様に沿った自前のフェイクHTTPサーバに対してのみ行っている。
     まず検証環境(ポート18081)で少額の動作確認をしてから本番(18080)に切り替えること。
     発注(POST /sendorder)は絶対に自動リトライしない。タイムアウト等で結果が不明なときは
     status="UNKNOWN" を返し、呼び出し側が停止(halt)して人間が証券会社の画面で確認する。
@@ -154,16 +155,19 @@ class PaperBroker(Broker):
 class KabuStationBroker(Broker):
     """auカブコム証券 kabuステーションAPI。実機未検証(モジュール冒頭の注記を参照)。"""
 
-    def __init__(self, base_url: str, api_password: str, order_password: str,
-                 account_type: int = 4, exchange: int = 1, session: requests.Session | None = None,
+    def __init__(self, base_url: str, api_password: str, account_type: int = 4,
+                 order_exchange: int = 27, board_exchange: int = 1,
+                 session: requests.Session | None = None,
                  timeout: float = 10.0, get_retries: int = 2, audit=None):
-        if not api_password or not order_password:
-            raise BrokerError("KABU_API_PASSWORD / KABU_ORDER_PASSWORD が未設定です")
+        if not api_password:
+            raise BrokerError("KABU_API_PASSWORD が未設定です")
         self.base_url = base_url.rstrip("/")
         self.api_password = api_password
-        self.order_password = order_password
         self.account_type = account_type
-        self.exchange = exchange
+        # 通常時は東証(1)を指定した新規発注ができない(公式仕様)ため、発注はSOR(9)か東証+(27)。
+        # 板情報(/board)は東証(1)などしか受け付けず、SOR・東証+は指定できない。
+        self.order_exchange = order_exchange
+        self.board_exchange = board_exchange
         self.session = session or requests.Session()
         self.timeout = timeout
         self.get_retries = get_retries
@@ -203,38 +207,47 @@ class KabuStationBroker(Broker):
         return float(self._get("/wallet/cash")["StockAccountWallet"])
 
     def get_positions(self) -> list[Position]:
-        out = []
+        """現物の保有。公式仕様では約定(ロット)ごとに別レコードなので、銘柄ごとに合算し、
+        取得単価は数量加重平均にする。発注に使う口座種別(account_type)以外のレコードは除く。"""
+        qty: dict[str, int] = {}
+        cost: dict[str, float] = {}
         for p in self._get("/positions", {"product": 1}):
-            qty = int(p.get("LeavesQty", 0))
-            if qty > 0:
-                out.append(Position(f"{p['Symbol']}.T", qty, float(p["Price"]) if p.get("Price") else None))
-        return out
+            if int(p.get("AccountType", self.account_type)) != self.account_type:
+                continue
+            n = int(p.get("LeavesQty", 0))
+            if n <= 0:
+                continue
+            sym = f"{p['Symbol']}.T"
+            qty[sym] = qty.get(sym, 0) + n
+            cost[sym] = cost.get(sym, 0.0) + n * float(p.get("Price") or 0)
+        return [Position(s, n, round(cost[s] / n, 4) if cost[s] else None) for s, n in qty.items()]
 
     def get_quote(self, ticker: str) -> Quote:
-        b = self._get(f"/board/{self._symbol(ticker)}@{self.exchange}")
+        b = self._get(f"/board/{self._symbol(ticker)}@{self.board_exchange}")
         price = b.get("CurrentPrice")
         if not price:
             raise BrokerError(f"{ticker}: 現在値なし")
-        return Quote(ticker, float(price), b.get("BidPrice"), b.get("AskPrice"))
+        # kabuステーションAPIの気配名は一般的な意味と逆: BidPrice=最良売気配(買う側が払う値)、
+        # AskPrice=最良買気配(売る側が受ける値)。呼び出し側(trade_guard)は一般的な意味で扱うので入れ替える。
+        return Quote(ticker, float(price), bid=b.get("AskPrice"), ask=b.get("BidPrice"))
 
     def place_order(self, req: OrderRequest) -> OrderResult:
         buy = req.side == "buy"
         body = {
-            "Password": self.order_password,
             "Symbol": self._symbol(req.ticker),
-            "Exchange": self.exchange,
+            "Exchange": self.order_exchange,
             "SecurityType": 1,
             "Side": "2" if buy else "1",
-            "CashMargin": 1,
-            "DelivType": 2 if buy else 0,
-            "FundType": "AA" if buy else "  ",
+            "CashMargin": 1,                    # 現物
+            "DelivType": 2 if buy else 0,       # 買=2(お預り金) / 売=0(指定なし)
+            "FundType": "02" if buy else "  ",  # 買=02(保護。AAは信用代用) / 売=半角スペース2つ
             "AccountType": self.account_type,
             "Qty": req.qty,
             "FrontOrderType": 20,          # 指値
             "Price": float(req.limit_price),
-            "ExpireDay": 0,                # 当日限り
+            "ExpireDay": 0,                # 「本日」(引けまでは当日)
         }
-        self.audit("POST_SENDORDER", {k: v for k, v in body.items() if k != "Password"})
+        self.audit("POST_SENDORDER", body)
         try:
             r = self.session.post(f"{self.base_url}/sendorder", headers=self._headers(), json=body, timeout=self.timeout)
         except requests.RequestException as e:

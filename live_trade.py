@@ -159,9 +159,9 @@ def make_broker(cfg: TradingConfig, env: Env, environ: dict | None = None) -> Br
         return KabuStationBroker(
             cfg.kabu_base_url,
             environ.get("KABU_API_PASSWORD", ""),
-            environ.get("KABU_ORDER_PASSWORD", ""),
             account_type=cfg.account_type,
-            exchange=cfg.kabu_exchange,
+            order_exchange=cfg.kabu_order_exchange,
+            board_exchange=cfg.kabu_board_exchange,
             audit=lambda kind, payload: ol.audit(kind, payload, env.audit_path),
         )
     if env.paper_path.exists():

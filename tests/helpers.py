@@ -93,10 +93,14 @@ class FakeKabu:
                 elif u.path.endswith("/wallet/cash"):
                     self._send(200, {"StockAccountWallet": 123456.0})
                 elif u.path.endswith("/positions"):
-                    self._send(200, [{"Symbol": "7203", "LeavesQty": 10, "Price": 2500.5},
-                                     {"Symbol": "9432", "LeavesQty": 0, "Price": 150.0}])
+                    # 公式仕様: 現物は約定(ロット)ごとに別レコード。口座種別 4=特定 / 2=一般
+                    self._send(200, [{"Symbol": "7203", "LeavesQty": 6, "Price": 2500.0, "AccountType": 4},
+                                     {"Symbol": "7203", "LeavesQty": 4, "Price": 2600.0, "AccountType": 4},
+                                     {"Symbol": "7203", "LeavesQty": 50, "Price": 2000.0, "AccountType": 2},
+                                     {"Symbol": "9432", "LeavesQty": 0, "Price": 150.0, "AccountType": 4}])
                 elif "/board/" in u.path:
-                    self._send(200, {"CurrentPrice": 2510.0, "BidPrice": 2509.0, "AskPrice": 2511.0})
+                    # 公式仕様の逆表記: BidPrice=最良売気配(買う側が払う価格)、AskPrice=最良買気配(売る側が受ける価格)
+                    self._send(200, {"CurrentPrice": 2510.0, "BidPrice": 2511.0, "AskPrice": 2509.0})
                 elif u.path.endswith("/orders"):
                     self._send(200, outer.orders_body)
                 else:

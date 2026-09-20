@@ -39,6 +39,15 @@ class TradingConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_config(self._write(tmp, {"max_order_notional": 0}))
 
+    def test_plain_tse_is_rejected_as_order_exchange(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                load_config(self._write(tmp, {"kabu_order_exchange": 1}))
+
+    def test_default_exchanges_are_tse_plus_for_orders_and_tse_for_board(self):
+        cfg = TradingConfig()
+        self.assertEqual((cfg.kabu_order_exchange, cfg.kabu_board_exchange), (27, 1))
+
     def test_live_requires_both_config_flag_and_env(self):
         self.assertFalse(TradingConfig(live=True).live_enabled({}))
         self.assertFalse(TradingConfig(live=True).live_enabled({"LIVE_TRADING": "0"}))

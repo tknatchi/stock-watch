@@ -2,7 +2,8 @@
 実発注(live_trade.py)の設定。trading_config.json から読み込む。
 
 - trading_config.json は .gitignore 済み。雛形は trading_config.example.json
-- パスワード・APIキーなどの秘密情報はここ(JSON)には書かない。環境変数のみで渡す
+- パスワード・APIキーなどの秘密情報はここ(JSON)には書かない。環境変数 KABU_API_PASSWORD のみで渡す
+  (公式仕様 v1.5 の sendorder には注文パスワードの項目が無いので不要)
 - 実発注は「設定の live=true」かつ「環境変数 LIVE_TRADING=1」の両方が揃ったときだけ有効
   (どちらか片方の設定ミス・持ち越しだけでは実弾が飛ばない二重ガード)
 """
@@ -49,7 +50,8 @@ class TradingConfig:
 
     account_type: int = 4                     # kabu API: 2=一般 4=特定(NISAは非対応。頻繁売買には不向きでもある)
     kabu_base_url: str = "http://localhost:18081/kabusapi"  # 18081=検証環境 / 18080=本番環境(意図して変えること)
-    kabu_exchange: int = 1                    # 1=東証
+    kabu_order_exchange: int = 27             # 発注先: 27=東証+ / 9=SOR。通常時は東証(1)指定の新規発注は不可(公式仕様)
+    kabu_board_exchange: int = 1              # 板情報の市場: 1=東証(板APIはSOR・東証+を受け付けない)
 
     def validate(self) -> None:
         if self.mode not in VALID_MODES:
@@ -61,6 +63,8 @@ class TradingConfig:
                 raise ValueError(f"{name} は正の値にしてください")
         if not 0 < self.hard_max_weight <= 1:
             raise ValueError("hard_max_weight は0より大きく1以下")
+        if self.kabu_order_exchange not in (9, 27):
+            raise ValueError("kabu_order_exchange は 9(SOR) か 27(東証+)。通常時は東証(1)指定の新規発注はできません")
 
     @property
     def is_production_endpoint(self) -> bool:

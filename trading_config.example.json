@@ -1,5 +1,5 @@
 {
-  "_comment": "これを trading_config.json にコピーして使う(trading_config.json は .gitignore 済み)。パスワード類は環境変数 KABU_API_PASSWORD / KABU_ORDER_PASSWORD で渡し、ここには書かない。",
+  "_comment": "これを trading_config.json にコピーして使う(trading_config.json は .gitignore 済み)。APIパスワードは環境変数 KABU_API_PASSWORD で渡し、ここには書かない。",
   "mode": "notify",
   "broker": "paper",
   "live": false,
@@ -10,5 +10,6 @@
   "hard_max_weight": 0.25,
   "price_deviation_limit": 0.03,
   "kabu_base_url": "http://localhost:18081/kabusapi",
+  "kabu_order_exchange": 27,
   "account_type": 4
 }

@@ -35,17 +35,15 @@ class KabuStationBrokerTests(unittest.TestCase):
     def setUp(self):
         self.srv = FakeKabu()
         self.audit: list = []
-        self.broker = KabuStationBroker(self.srv.base_url, "api-pass", "test-order-pass", timeout=0.4,
+        self.broker = KabuStationBroker(self.srv.base_url, "api-pass", timeout=0.4,
                                         audit=lambda kind, payload: self.audit.append((kind, payload)))
 
     def tearDown(self):
         self.srv.stop()
 
-    def test_missing_passwords_fail_fast(self):
+    def test_missing_api_password_fails_fast(self):
         with self.assertRaises(BrokerError):
-            KabuStationBroker(self.srv.base_url, "", "x")
-        with self.assertRaises(BrokerError):
-            KabuStationBroker(self.srv.base_url, "x", "")
+            KabuStationBroker(self.srv.base_url, "")
 
     def test_token_is_fetched_once_and_sent_as_api_key(self):
         self.broker.get_cash()
@@ -54,15 +52,38 @@ class KabuStationBrokerTests(unittest.TestCase):
         gets = [r for r in self.srv.requests if r[0] == "GET"]
         self.assertTrue(all(r[2]["key"] == "tok123" for r in gets))
 
-    def test_cash_and_positions_are_parsed_with_ticker_suffix_and_zero_positions_dropped(self):
+    def test_cash_is_parsed(self):
         self.assertEqual(self.broker.get_cash(), 123456.0)
-        pos = self.broker.get_positions()
-        self.assertEqual([(p.ticker, p.shares, p.avg_price) for p in pos], [("7203.T", 10, 2500.5)])
 
-    def test_quote_is_parsed(self):
+    def test_positions_sum_lots_per_symbol_and_average_the_price(self):
+        pos = self.broker.get_positions()
+        self.assertEqual([(p.ticker, p.shares, p.avg_price) for p in pos], [("7203.T", 10, 2540.0)])
+
+    def test_positions_outside_the_configured_account_type_are_ignored(self):
+        # フェイクには一般口座(AccountType=2)の50株がある。特定口座(4)の10株だけが見えること
+        self.assertEqual(self.broker.get_positions()[0].shares, 10)
+
+    def test_zero_quantity_positions_are_dropped(self):
+        self.assertNotIn("9432.T", [p.ticker for p in self.broker.get_positions()])
+
+    def test_quote_maps_kabu_reversed_bid_ask_to_conventional(self):
         q = self.broker.get_quote("7203.T")
+        # kabuのBidPrice(最良売気配=買う側が払う値)→ ask、AskPrice(最良買気配)→ bid
         self.assertEqual((q.price, q.bid, q.ask), (2510.0, 2509.0, 2511.0))
+
+    def test_board_uses_tse_code_while_orders_use_the_order_exchange(self):
+        broker = KabuStationBroker(self.srv.base_url, "api-pass", order_exchange=27, board_exchange=1, timeout=0.4)
+        broker.get_quote("7203.T")
+        broker.place_order(OrderRequest("7203.T", "buy", 10, 2515.0))
         self.assertTrue(any(p.endswith("/board/7203@1") for _, p, _ in self.srv.requests))
+        body = next(b for m, p, b in self.srv.requests if p.endswith("/sendorder"))
+        self.assertEqual(body["Exchange"], 27)
+
+    def test_default_order_exchange_is_not_plain_tse(self):
+        # 公式仕様: 通常時に東証(1)を指定した新規発注はできない
+        self.broker.place_order(OrderRequest("7203.T", "buy", 10, 2515.0))
+        body = next(b for m, p, b in self.srv.requests if p.endswith("/sendorder"))
+        self.assertIn(body["Exchange"], (9, 27))
 
     def test_buy_order_request_body(self):
         res = self.broker.place_order(OrderRequest("7203.T", "buy", 10, 2515.0))
@@ -70,18 +91,22 @@ class KabuStationBrokerTests(unittest.TestCase):
         self.assertEqual(res.status, "SUBMITTED")
         self.assertEqual(res.order_id, "20260917A01")
         self.assertEqual((body["Symbol"], body["Side"], body["Qty"], body["Price"]), ("7203", "2", 10, 2515.0))
-        self.assertEqual((body["FrontOrderType"], body["CashMargin"], body["DelivType"], body["FundType"]), (20, 1, 2, "AA"))
-        self.assertEqual((body["Exchange"], body["AccountType"], body["ExpireDay"]), (1, 4, 0))
-        self.assertEqual(body["Password"], "test-order-pass")
+        # 現物買: 受渡区分2=お預り金 / 資産区分02=保護(AAは信用代用なので不可)
+        self.assertEqual((body["FrontOrderType"], body["CashMargin"], body["DelivType"], body["FundType"]), (20, 1, 2, "02"))
+        self.assertEqual((body["AccountType"], body["ExpireDay"], body["SecurityType"]), (4, 0, 1))
 
-    def test_sell_order_uses_sell_side_and_no_fund_type(self):
+    def test_sell_order_uses_sell_side_and_two_space_fund_type(self):
         self.broker.place_order(OrderRequest("7203.T", "sell", 5, 2500.0))
         body = next(b for m, p, b in self.srv.requests if p.endswith("/sendorder"))
         self.assertEqual((body["Side"], body["DelivType"], body["FundType"]), ("1", 0, "  "))
 
-    def test_order_password_never_reaches_audit_callback(self):
+    def test_order_body_has_no_password_field_per_official_spec(self):
         self.broker.place_order(OrderRequest("7203.T", "buy", 10, 2515.0))
-        self.assertNotIn("test-order-pass", json.dumps(self.audit, ensure_ascii=False))
+        body = next(b for m, p, b in self.srv.requests if p.endswith("/sendorder"))
+        self.assertNotIn("Password", body)
+
+    def test_api_password_never_reaches_audit_callback(self):
+        self.broker.place_order(OrderRequest("7203.T", "buy", 10, 2515.0))
         self.assertNotIn("api-pass", json.dumps(self.audit, ensure_ascii=False))
 
     def test_timeout_on_sendorder_is_unknown_and_never_retried(self):
