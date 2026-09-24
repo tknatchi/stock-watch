@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-24T09:46",
+  "generatedAt": "2026-09-25T08:00",
   "minScore": 45,
   "maxWeight": 0.15,
   "cash": 51890.0,
-  "holdingsValue": 50608.0,
-  "totalValue": 102498.0,
+  "holdingsValue": 250286.0,
+  "totalValue": 302176.0,
   "history": [
     {
       "date": "2026-09-09",
@@ -47,62 +47,236 @@
       "cash": 51890.0,
       "holdingsValue": 252414.0,
       "totalValue": 304305.0
+    },
+    {
+      "date": "2026-09-24",
+      "cash": 51890.0,
+      "holdingsValue": 229670.0,
+      "totalValue": 281560.0
     }
   ],
   "holdings": [
+    {
+      "ticker": "7267.T",
+      "name": "本田技研工業",
+      "sector": "自動車",
+      "shares": 12,
+      "price": 1733.0,
+      "changePct": 2.61,
+      "value": 20796.0,
+      "weight": 0.0688,
+      "targetWeight": 0.0664,
+      "buyScore": 62
+    },
     {
       "ticker": "2914.T",
       "name": "日本たばこ産業",
       "sector": "食品・たばこ",
       "shares": 3,
-      "price": 6858.0,
-      "changePct": -0.41,
-      "value": 20574.0,
-      "weight": 0.2007,
-      "targetWeight": 0.15,
+      "price": 6872.0,
+      "changePct": -0.2,
+      "value": 20616.0,
+      "weight": 0.0682,
+      "targetWeight": 0.0503,
       "buyScore": 47
+    },
+    {
+      "ticker": "5020.T",
+      "name": "ENEOSホールディングス",
+      "sector": "エネルギー",
+      "shares": 13,
+      "price": 1422.0,
+      "changePct": -0.66,
+      "value": 18486.0,
+      "weight": 0.0612,
+      "targetWeight": 0.0664,
+      "buyScore": 62
+    },
+    {
+      "ticker": "9433.T",
+      "name": "KDDI",
+      "sector": "通信",
+      "shares": 6,
+      "price": 3031.0,
+      "changePct": -0.95,
+      "value": 18186.0,
+      "weight": 0.0602,
+      "targetWeight": 0.0664,
+      "buyScore": 62
     },
     {
       "ticker": "3382.T",
       "name": "セブン&アイ・ホールディングス",
       "sector": "小売",
       "shares": 9,
-      "price": 2015.5,
-      "changePct": -0.22,
-      "value": 18140.0,
-      "weight": 0.177,
-      "targetWeight": 0.15,
-      "buyScore": 51
+      "price": 2000.0,
+      "changePct": -0.99,
+      "value": 18000.0,
+      "weight": 0.0596,
+      "targetWeight": 0.0589,
+      "buyScore": 55
+    },
+    {
+      "ticker": "8306.T",
+      "name": "三菱UFJフィナンシャル・グループ",
+      "sector": "銀行",
+      "shares": 5,
+      "price": 3573.0,
+      "changePct": -1.3,
+      "value": 17865.0,
+      "weight": 0.0591,
+      "targetWeight": 0.06,
+      "buyScore": 56
+    },
+    {
+      "ticker": "7203.T",
+      "name": "トヨタ自動車",
+      "sector": "自動車",
+      "shares": 6,
+      "price": 2969.0,
+      "changePct": -1.85,
+      "value": 17814.0,
+      "weight": 0.059,
+      "targetWeight": 0.0664,
+      "buyScore": 62
+    },
+    {
+      "ticker": "4568.T",
+      "name": "第一三共",
+      "sector": "医薬品",
+      "shares": 6,
+      "price": 2880.0,
+      "changePct": -2.49,
+      "value": 17280.0,
+      "weight": 0.0572,
+      "targetWeight": 0.0664,
+      "buyScore": 62
+    },
+    {
+      "ticker": "8801.T",
+      "name": "三井不動産",
+      "sector": "不動産",
+      "shares": 11,
+      "price": 1501.0,
+      "changePct": 1.08,
+      "value": 16511.0,
+      "weight": 0.0546,
+      "targetWeight": 0.0,
+      "buyScore": 33
+    },
+    {
+      "ticker": "9201.T",
+      "name": "日本航空",
+      "sector": "航空",
+      "shares": 5,
+      "price": 3084.0,
+      "changePct": 0.62,
+      "value": 15420.0,
+      "weight": 0.051,
+      "targetWeight": 0.0632,
+      "buyScore": 59
+    },
+    {
+      "ticker": "8031.T",
+      "name": "三井物産",
+      "sector": "総合商社",
+      "shares": 3,
+      "price": 5033.0,
+      "changePct": -2.48,
+      "value": 15099.0,
+      "weight": 0.05,
+      "targetWeight": 0.0525,
+      "buyScore": 49
+    },
+    {
+      "ticker": "6758.T",
+      "name": "ソニーグループ",
+      "sector": "電機・エンタメ",
+      "shares": 4,
+      "price": 3663.0,
+      "changePct": -0.92,
+      "value": 14652.0,
+      "weight": 0.0485,
+      "targetWeight": 0.0503,
+      "buyScore": 47
+    },
+    {
+      "ticker": "8058.T",
+      "name": "三菱商事",
+      "sector": "総合商社",
+      "shares": 3,
+      "price": 4811.0,
+      "changePct": -2.75,
+      "value": 14433.0,
+      "weight": 0.0478,
+      "targetWeight": 0.0525,
+      "buyScore": 49
+    },
+    {
+      "ticker": "8316.T",
+      "name": "三井住友フィナンシャルグループ",
+      "sector": "銀行",
+      "shares": 2,
+      "price": 6679.0,
+      "changePct": -2.21,
+      "value": 13358.0,
+      "weight": 0.0442,
+      "targetWeight": 0.0578,
+      "buyScore": 54
     },
     {
       "ticker": "4502.T",
       "name": "武田薬品工業",
       "sector": "医薬品",
       "shares": 2,
-      "price": 5947.0,
-      "changePct": -0.35,
-      "value": 11894.0,
-      "weight": 0.116,
-      "targetWeight": 0.15,
-      "buyScore": 59
+      "price": 5885.0,
+      "changePct": -1.39,
+      "value": 11770.0,
+      "weight": 0.039,
+      "targetWeight": 0.0675,
+      "buyScore": 63
     },
     {
       "ticker": "4063.T",
       "name": "信越化学工業",
       "sector": "化学",
       "shares": 0,
-      "price": 5901.0,
-      "changePct": 0.98,
+      "price": 5903.0,
+      "changePct": 1.01,
       "value": 0.0,
       "weight": 0.0,
-      "targetWeight": 0.15,
+      "targetWeight": 0.0493,
       "buyScore": 46
+    },
+    {
+      "ticker": "7974.T",
+      "name": "任天堂",
+      "sector": "ゲーム",
+      "shares": 0,
+      "price": 8196.0,
+      "changePct": -1.71,
+      "value": 0.0,
+      "weight": 0.0,
+      "targetWeight": 0.0535,
+      "buyScore": 50
+    },
+    {
+      "ticker": "9983.T",
+      "name": "ファーストリテイリング",
+      "sector": "小売",
+      "shares": 0,
+      "price": 67920.0,
+      "changePct": 0.35,
+      "value": 0.0,
+      "weight": 0.0,
+      "targetWeight": 0.0525,
+      "buyScore": 49
     }
   ],
   "auto": {
-    "cash": 20287.0,
-    "holdingsValue": 85294.0,
-    "totalValue": 105581.0,
+    "cash": 17660.0,
+    "holdingsValue": 286952.0,
+    "totalValue": 304612.0,
     "history": [
       {
         "date": "2026-09-09",
@@ -145,6 +319,12 @@
         "cash": 20287.0,
         "holdingsValue": 286647.0,
         "totalValue": 306934.0
+      },
+      {
+        "date": "2026-09-24",
+        "cash": 17660.0,
+        "holdingsValue": 286952.0,
+        "totalValue": 304612.0
       }
     ],
     "holdings": [
@@ -153,48 +333,242 @@
         "name": "セブン&アイ・ホールディングス",
         "sector": "小売",
         "shares": 12,
-        "price": 2015.5,
-        "changePct": -0.22,
-        "value": 24186.0,
-        "weight": 0.2291,
-        "targetWeight": 0.15,
-        "buyScore": 51
+        "price": 2000.0,
+        "changePct": -0.99,
+        "value": 24000.0,
+        "weight": 0.0788,
+        "targetWeight": 0.0589,
+        "buyScore": 55
       },
       {
         "ticker": "4502.T",
         "name": "武田薬品工業",
         "sector": "医薬品",
         "shares": 4,
-        "price": 5947.0,
-        "changePct": -0.35,
-        "value": 23788.0,
-        "weight": 0.2253,
-        "targetWeight": 0.15,
+        "price": 5885.0,
+        "changePct": -1.39,
+        "value": 23540.0,
+        "weight": 0.0773,
+        "targetWeight": 0.0675,
+        "buyScore": 63
+      },
+      {
+        "ticker": "9201.T",
+        "name": "日本航空",
+        "sector": "航空",
+        "shares": 7,
+        "price": 3084.0,
+        "changePct": 0.62,
+        "value": 21588.0,
+        "weight": 0.0709,
+        "targetWeight": 0.0632,
         "buyScore": 59
       },
       {
-        "ticker": "4063.T",
-        "name": "信越化学工業",
-        "sector": "化学",
+        "ticker": "7267.T",
+        "name": "本田技研工業",
+        "sector": "自動車",
+        "shares": 12,
+        "price": 1733.0,
+        "changePct": 2.61,
+        "value": 20796.0,
+        "weight": 0.0683,
+        "targetWeight": 0.0664,
+        "buyScore": 62
+      },
+      {
+        "ticker": "4568.T",
+        "name": "第一三共",
+        "sector": "医薬品",
+        "shares": 7,
+        "price": 2880.0,
+        "changePct": -2.49,
+        "value": 20160.0,
+        "weight": 0.0662,
+        "targetWeight": 0.0664,
+        "buyScore": 62
+      },
+      {
+        "ticker": "8031.T",
+        "name": "三井物産",
+        "sector": "総合商社",
         "shares": 4,
-        "price": 5901.0,
-        "changePct": 0.98,
-        "value": 23604.0,
-        "weight": 0.2236,
-        "targetWeight": 0.15,
-        "buyScore": 46
+        "price": 5033.0,
+        "changePct": -2.48,
+        "value": 20132.0,
+        "weight": 0.0661,
+        "targetWeight": 0.0525,
+        "buyScore": 49
+      },
+      {
+        "ticker": "5020.T",
+        "name": "ENEOSホールディングス",
+        "sector": "エネルギー",
+        "shares": 13,
+        "price": 1422.0,
+        "changePct": -0.66,
+        "value": 18486.0,
+        "weight": 0.0607,
+        "targetWeight": 0.0664,
+        "buyScore": 62
+      },
+      {
+        "ticker": "9433.T",
+        "name": "KDDI",
+        "sector": "通信",
+        "shares": 6,
+        "price": 3031.0,
+        "changePct": -0.95,
+        "value": 18186.0,
+        "weight": 0.0597,
+        "targetWeight": 0.0664,
+        "buyScore": 62
+      },
+      {
+        "ticker": "8306.T",
+        "name": "三菱UFJフィナンシャル・グループ",
+        "sector": "銀行",
+        "shares": 5,
+        "price": 3573.0,
+        "changePct": -1.3,
+        "value": 17865.0,
+        "weight": 0.0586,
+        "targetWeight": 0.06,
+        "buyScore": 56
+      },
+      {
+        "ticker": "7203.T",
+        "name": "トヨタ自動車",
+        "sector": "自動車",
+        "shares": 6,
+        "price": 2969.0,
+        "changePct": -1.85,
+        "value": 17814.0,
+        "weight": 0.0585,
+        "targetWeight": 0.0664,
+        "buyScore": 62
+      },
+      {
+        "ticker": "7974.T",
+        "name": "任天堂",
+        "sector": "ゲーム",
+        "shares": 2,
+        "price": 8196.0,
+        "changePct": -1.71,
+        "value": 16392.0,
+        "weight": 0.0538,
+        "targetWeight": 0.0535,
+        "buyScore": 50
+      },
+      {
+        "ticker": "6758.T",
+        "name": "ソニーグループ",
+        "sector": "電機・エンタメ",
+        "shares": 4,
+        "price": 3663.0,
+        "changePct": -0.92,
+        "value": 14652.0,
+        "weight": 0.0481,
+        "targetWeight": 0.0503,
+        "buyScore": 47
+      },
+      {
+        "ticker": "8058.T",
+        "name": "三菱商事",
+        "sector": "総合商社",
+        "shares": 3,
+        "price": 4811.0,
+        "changePct": -2.75,
+        "value": 14433.0,
+        "weight": 0.0474,
+        "targetWeight": 0.0525,
+        "buyScore": 49
       },
       {
         "ticker": "2914.T",
         "name": "日本たばこ産業",
         "sector": "食品・たばこ",
         "shares": 2,
-        "price": 6858.0,
-        "changePct": -0.41,
-        "value": 13716.0,
-        "weight": 0.1299,
-        "targetWeight": 0.15,
+        "price": 6872.0,
+        "changePct": -0.2,
+        "value": 13744.0,
+        "weight": 0.0451,
+        "targetWeight": 0.0503,
         "buyScore": 47
+      },
+      {
+        "ticker": "8316.T",
+        "name": "三井住友フィナンシャルグループ",
+        "sector": "銀行",
+        "shares": 2,
+        "price": 6679.0,
+        "changePct": -2.21,
+        "value": 13358.0,
+        "weight": 0.0439,
+        "targetWeight": 0.0578,
+        "buyScore": 54
+      },
+      {
+        "ticker": "4063.T",
+        "name": "信越化学工業",
+        "sector": "化学",
+        "shares": 2,
+        "price": 5903.0,
+        "changePct": 1.01,
+        "value": 11806.0,
+        "weight": 0.0388,
+        "targetWeight": 0.0493,
+        "buyScore": 46
+      },
+      {
+        "ticker": "9983.T",
+        "name": "ファーストリテイリング",
+        "sector": "小売",
+        "shares": 0,
+        "price": 67920.0,
+        "changePct": 0.35,
+        "value": 0.0,
+        "weight": 0.0,
+        "targetWeight": 0.0525,
+        "buyScore": 49
+      }
+    ]
+  },
+  "benchmark": {
+    "ticker": "2559.T",
+    "label": "オルカン(NISA想定, 2559.T代替)",
+    "history": [
+      {
+        "date": "2026-09-09",
+        "totalValue": 299764.0
+      },
+      {
+        "date": "2026-09-10",
+        "totalValue": 299764.0
+      },
+      {
+        "date": "2026-09-11",
+        "totalValue": 298629.0
+      },
+      {
+        "date": "2026-09-14",
+        "totalValue": 298732.0
+      },
+      {
+        "date": "2026-09-17",
+        "totalValue": 299867.0
+      },
+      {
+        "date": "2026-09-18",
+        "totalValue": 304616.0
+      },
+      {
+        "date": "2026-09-22",
+        "totalValue": 304616.0
+      },
+      {
+        "date": "2026-09-24",
+        "totalValue": 305957.0
       }
     ]
   }
