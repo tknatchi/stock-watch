@@ -1,0 +1,32 @@
+name: PR TIMES Headline LINE Broadcast
+
+on:
+  schedule:
+    # 15分おきに実行し、その都度「未読のPR TIMESヘッドラインメール」があるかをIMAPで確認する。
+    # 新着がなければ何もせず終了する(fetch_prtimes.py側で判定)。
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {} # Actionsタブから手動実行してテストできるようにする
+
+jobs:
+  send-prtimes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: news-line-bot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check for new PR TIMES headline mail and send to LINE
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python fetch_prtimes.py
