@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T10:24",
+  "generatedAt": "2026-10-29T13:15",
   "criteria": {
     "max_pe": 20.0,
     "min_dividend_yield": 2.0,
@@ -10,17 +10,16 @@
       "ticker": "7203.T",
       "name": "トヨタ自動車",
       "sector": "自動車",
-      "price": 3105.0,
-      "prevClose": 3102.0,
-      "changePct": 0.1,
-      "volume": 4359400,
-      "ma25": 2992.7,
-      "ma75": 2967.5,
+      "price": 3052.0,
+      "prevClose": 3051.0,
+      "changePct": 0.03,
+      "volume": 9926700,
+      "ma25": 2993.7,
+      "ma75": 2969.6,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 8.9,
-      "dividendYield": 3.21,
+      "peRatio": 8.8,
+      "dividendYield": 3.22,
       "history": [
-        2980.3,
         2974.4,
         2970.4,
         2965.5,
@@ -49,40 +48,40 @@
         3105.0,
         3117.0,
         3102.0,
-        3105.0
+        3051.0,
+        3052.0
       ],
       "matched": true,
       "matchReasons": [
-        "PER 8.9 <= 20.0",
-        "配当利回り 3.21% >= 2.0%",
+        "PER 8.8 <= 20.0",
+        "配当利回り 3.22% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 63.2,
-      "macdHist": 11.71,
-      "bbPct": 0.757,
-      "buyScore": 62,
+      "rsi14": 54.4,
+      "macdHist": 3.81,
+      "bbPct": 0.61,
+      "buyScore": 69,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
         "MACDが上向き（シグナル線を上抜け中）",
-        "PER 8.9倍（割安水準）",
-        "配当利回り 3.21%"
+        "PER 8.8倍（割安水準）",
+        "配当利回り 3.22%"
       ]
     },
     {
       "ticker": "7267.T",
       "name": "本田技研工業",
       "sector": "自動車",
-      "price": 1789.5,
-      "prevClose": 1788.5,
-      "changePct": 0.06,
-      "volume": 3040900,
-      "ma25": 1736.8,
-      "ma75": 1648.1,
+      "price": 1769.0,
+      "prevClose": 1762.5,
+      "changePct": 0.37,
+      "volume": 5048700,
+      "ma25": 1740.3,
+      "ma75": 1651.4,
       "trend": "上昇トレンド(短期>長期)",
       "peRatio": null,
-      "dividendYield": 3.89,
+      "dividendYield": 3.91,
       "history": [
-        1630.1,
         1644.8,
         1640.9,
         1650.2,
@@ -111,37 +110,37 @@
         1795.0,
         1798.5,
         1788.5,
-        1789.5
+        1762.5,
+        1769.0
       ],
       "matched": false,
       "matchReasons": [
-        "配当利回り 3.89% >= 2.0%",
+        "配当利回り 3.91% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 64.9,
-      "macdHist": -0.24,
-      "bbPct": 0.683,
-      "buyScore": 41,
+      "rsi14": 57.7,
+      "macdHist": -3.92,
+      "bbPct": 0.576,
+      "buyScore": 47,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "配当利回り 3.89%"
+        "配当利回り 3.91%"
       ]
     },
     {
       "ticker": "6758.T",
       "name": "ソニーグループ",
       "sector": "電機・エンタメ",
-      "price": 4008.0,
-      "prevClose": 4070.0,
-      "changePct": -1.52,
-      "volume": 5351700,
-      "ma25": 3853.8,
-      "ma75": 3726.5,
+      "price": 3915.0,
+      "prevClose": 3957.0,
+      "changePct": -1.06,
+      "volume": 8748800,
+      "ma25": 3861.1,
+      "ma75": 3732.0,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 21.9,
-      "dividendYield": 0.85,
+      "peRatio": 21.6,
+      "dividendYield": 0.86,
       "history": [
-        3614.7,
         3770.0,
         3707.3,
         3701.3,
@@ -170,16 +169,17 @@
         4137.0,
         4135.0,
         4070.0,
-        4008.0
+        3957.0,
+        3915.0
       ],
       "matched": false,
       "matchReasons": [
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 59.7,
-      "macdHist": 17.68,
-      "bbPct": 0.694,
-      "buyScore": 51,
+      "rsi14": 51.6,
+      "macdHist": 1.98,
+      "bbPct": 0.524,
+      "buyScore": 58,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
         "MACDが上向き（シグナル線を上抜け中）"
@@ -189,17 +189,16 @@
       "ticker": "6861.T",
       "name": "キーエンス",
       "sector": "精密機器",
-      "price": 78490.0,
-      "prevClose": 79080.0,
-      "changePct": -0.75,
-      "volume": 311100,
-      "ma25": 79809.6,
-      "ma75": 79062.8,
+      "price": 77180.0,
+      "prevClose": 79190.0,
+      "changePct": -2.54,
+      "volume": 417900,
+      "ma25": 79861.6,
+      "ma75": 79108.8,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 41.8,
-      "dividendYield": 0.71,
+      "peRatio": 42.0,
+      "dividendYield": 0.7,
       "history": [
-        75724.6,
         75684.8,
         75385.9,
         75625.0,
@@ -228,16 +227,17 @@
         78380.0,
         77270.0,
         79080.0,
-        78490.0
+        79190.0,
+        77180.0
       ],
       "matched": false,
       "matchReasons": [
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 45.9,
-      "macdHist": -287.6,
-      "bbPct": 0.146,
-      "buyScore": 42,
+      "rsi14": 41.6,
+      "macdHist": -339.86,
+      "bbPct": -0.037,
+      "buyScore": 46,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
         "ボリンジャーバンド下限付近"
@@ -247,17 +247,16 @@
       "ticker": "9432.T",
       "name": "日本電信電話",
       "sector": "通信",
-      "price": 173.3,
-      "prevClose": 174.0,
-      "changePct": -0.4,
-      "volume": 39249900,
-      "ma25": 173.2,
-      "ma75": 164.0,
+      "price": 170.6,
+      "prevClose": 171.9,
+      "changePct": -0.76,
+      "volume": 82998600,
+      "ma25": 173.0,
+      "ma75": 164.2,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 13.8,
-      "dividendYield": 3.06,
+      "peRatio": 13.5,
+      "dividendYield": 3.1,
       "history": [
-        173.0,
         175.5,
         175.3,
         174.4,
@@ -286,39 +285,39 @@
         174.8,
         176.4,
         174.0,
-        173.3
+        171.9,
+        170.6
       ],
       "matched": true,
       "matchReasons": [
-        "PER 13.8 <= 20.0",
-        "配当利回り 3.06% >= 2.0%",
+        "PER 13.5 <= 20.0",
+        "配当利回り 3.10% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 51.0,
-      "macdHist": -0.29,
-      "bbPct": 0.492,
-      "buyScore": 49,
+      "rsi14": 44.6,
+      "macdHist": -0.63,
+      "bbPct": 0.233,
+      "buyScore": 57,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "PER 13.8倍（割安水準）",
-        "配当利回り 3.06%"
+        "PER 13.5倍（割安水準）",
+        "配当利回り 3.10%"
       ]
     },
     {
       "ticker": "9433.T",
       "name": "KDDI",
       "sector": "通信",
-      "price": 2839.5,
-      "prevClose": 2850.5,
-      "changePct": -0.39,
-      "volume": 2116900,
-      "ma25": 2909.9,
-      "ma75": 2889.9,
+      "price": 2767.0,
+      "prevClose": 2800.5,
+      "changePct": -1.2,
+      "volume": 4739400,
+      "ma25": 2898.4,
+      "ma75": 2889.3,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 14.6,
-      "dividendYield": 2.93,
+      "peRatio": 14.2,
+      "dividendYield": 2.95,
       "history": [
-        2988.3,
         3026.8,
         3001.1,
         3035.6,
@@ -347,39 +346,39 @@
         2865.5,
         2870.0,
         2850.5,
-        2839.5
+        2800.5,
+        2767.0
       ],
       "matched": true,
       "matchReasons": [
-        "PER 14.6 <= 20.0",
-        "配当利回り 2.93% >= 2.0%",
+        "PER 14.2 <= 20.0",
+        "配当利回り 2.95% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 38.5,
-      "macdHist": -7.29,
-      "bbPct": 0.033,
-      "buyScore": 62,
+      "rsi14": 30.5,
+      "macdHist": -13.78,
+      "bbPct": -0.181,
+      "buyScore": 66,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
         "ボリンジャーバンド下限付近",
-        "PER 14.6倍（割安水準）"
+        "PER 14.2倍（割安水準）"
       ]
     },
     {
       "ticker": "9984.T",
       "name": "ソフトバンクグループ",
       "sector": "投資持株",
-      "price": 4595.0,
-      "prevClose": 4474.0,
-      "changePct": 2.7,
-      "volume": 14295600,
-      "ma25": 5514.0,
-      "ma75": 5611.6,
+      "price": 4665.0,
+      "prevClose": 4682.0,
+      "changePct": -0.36,
+      "volume": 34531000,
+      "ma25": 5451.7,
+      "ma75": 5598.2,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 5.1,
-      "dividendYield": 0.26,
+      "peRatio": 5.2,
+      "dividendYield": 0.25,
       "history": [
-        6534.2,
         5833.9,
         6273.5,
         6177.6,
@@ -408,35 +407,35 @@
         4276.0,
         4263.0,
         4474.0,
-        4595.0
+        4682.0,
+        4665.0
       ],
       "matched": false,
       "matchReasons": [
-        "PER 5.1 <= 20.0"
+        "PER 5.2 <= 20.0"
       ],
-      "rsi14": 37.3,
-      "macdHist": -95.2,
-      "bbPct": 0.286,
-      "buyScore": 40,
+      "rsi14": 39.0,
+      "macdHist": -54.58,
+      "bbPct": 0.324,
+      "buyScore": 39,
       "scoreReasons": [
-        "PER 5.1倍（割安水準）"
+        "PER 5.2倍（割安水準）"
       ]
     },
     {
       "ticker": "8306.T",
       "name": "三菱UFJフィナンシャル・グループ",
       "sector": "銀行",
-      "price": 3361.0,
-      "prevClose": 3370.0,
-      "changePct": -0.27,
-      "volume": 9411400,
-      "ma25": 3504.8,
-      "ma75": 3545.8,
+      "price": 3426.0,
+      "prevClose": 3377.0,
+      "changePct": 1.45,
+      "volume": 18986800,
+      "ma25": 3499.5,
+      "ma75": 3546.5,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 14.2,
-      "dividendYield": 2.91,
+      "peRatio": 14.5,
+      "dividendYield": 2.85,
       "history": [
-        3613.8,
         3672.0,
         3620.7,
         3607.9,
@@ -465,36 +464,36 @@
         3295.0,
         3304.0,
         3370.0,
-        3361.0
+        3377.0,
+        3426.0
       ],
       "matched": false,
       "matchReasons": [
-        "PER 14.2 <= 20.0",
-        "配当利回り 2.91% >= 2.0%"
+        "PER 14.5 <= 20.0",
+        "配当利回り 2.85% >= 2.0%"
       ],
-      "rsi14": 42.5,
-      "macdHist": -14.5,
-      "bbPct": 0.252,
-      "buyScore": 42,
+      "rsi14": 47.0,
+      "macdHist": -5.76,
+      "bbPct": 0.406,
+      "buyScore": 37,
       "scoreReasons": [
-        "PER 14.2倍（割安水準）"
+        "PER 14.5倍（割安水準）"
       ]
     },
     {
       "ticker": "8316.T",
       "name": "三井住友フィナンシャルグループ",
       "sector": "銀行",
-      "price": 3165.0,
-      "prevClose": 3187.0,
-      "changePct": -0.69,
-      "volume": 5552600,
-      "ma25": 3285.6,
-      "ma75": 3324.7,
+      "price": 3194.0,
+      "prevClose": 3159.0,
+      "changePct": 1.11,
+      "volume": 8084100,
+      "ma25": 3280.0,
+      "ma75": 3323.0,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 14.2,
-      "dividendYield": 2.89,
+      "peRatio": 14.3,
+      "dividendYield": 2.82,
       "history": [
-        3366.5,
         3424.5,
         3332.9,
         3332.9,
@@ -523,36 +522,36 @@
         3114.0,
         3114.0,
         3187.0,
-        3165.0
+        3159.0,
+        3194.0
       ],
       "matched": false,
       "matchReasons": [
-        "PER 14.2 <= 20.0",
-        "配当利回り 2.89% >= 2.0%"
+        "PER 14.3 <= 20.0",
+        "配当利回り 2.82% >= 2.0%"
       ],
-      "rsi14": 43.2,
-      "macdHist": -13.04,
-      "bbPct": 0.244,
-      "buyScore": 41,
+      "rsi14": 45.6,
+      "macdHist": -8.24,
+      "bbPct": 0.332,
+      "buyScore": 39,
       "scoreReasons": [
-        "PER 14.2倍（割安水準）"
+        "PER 14.3倍（割安水準）"
       ]
     },
     {
       "ticker": "9983.T",
       "name": "ファーストリテイリング",
       "sector": "小売",
-      "price": 74730.0,
-      "prevClose": 73760.0,
-      "changePct": 1.32,
-      "volume": 276400,
-      "ma25": 73075.2,
-      "ma75": 74193.7,
+      "price": 73300.0,
+      "prevClose": 73520.0,
+      "changePct": -0.3,
+      "volume": 473900,
+      "ma25": 73251.6,
+      "ma75": 74002.2,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 42.4,
+      "peRatio": 41.6,
       "dividendYield": 1.22,
       "history": [
-        66480.0,
         66760.0,
         66620.0,
         67030.0,
@@ -581,14 +580,15 @@
         75880.0,
         73980.0,
         73760.0,
-        74730.0
+        73520.0,
+        73300.0
       ],
       "matched": false,
       "matchReasons": [],
-      "rsi14": 54.5,
-      "macdHist": -79.54,
-      "bbPct": 0.57,
-      "buyScore": 18,
+      "rsi14": 49.7,
+      "macdHist": -231.32,
+      "bbPct": 0.297,
+      "buyScore": 24,
       "scoreReasons": [
         "突出した根拠はなく、各指標とも中庸"
       ]
@@ -597,17 +597,16 @@
       "ticker": "3382.T",
       "name": "セブン&アイ・ホールディングス",
       "sector": "小売",
-      "price": 2084.0,
-      "prevClose": 2090.0,
-      "changePct": -0.29,
-      "volume": 2562400,
-      "ma25": 2030.8,
-      "ma75": 2033.3,
+      "price": 2073.0,
+      "prevClose": 2058.5,
+      "changePct": 0.7,
+      "volume": 3468100,
+      "ma25": 2031.9,
+      "ma75": 2033.9,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 17.0,
-      "dividendYield": 2.81,
+      "peRatio": 16.8,
+      "dividendYield": 2.87,
       "history": [
-        2008.0,
         2037.5,
         2040.0,
         2031.5,
@@ -636,17 +635,18 @@
         2119.0,
         2136.5,
         2090.0,
-        2084.0
+        2058.5,
+        2073.0
       ],
       "matched": false,
       "matchReasons": [
-        "PER 17.0 <= 20.0",
-        "配当利回り 2.81% >= 2.0%"
+        "PER 16.8 <= 20.0",
+        "配当利回り 2.87% >= 2.0%"
       ],
-      "rsi14": 57.2,
-      "macdHist": 8.3,
-      "bbPct": 0.696,
-      "buyScore": 46,
+      "rsi14": 54.5,
+      "macdHist": 3.9,
+      "bbPct": 0.642,
+      "buyScore": 48,
       "scoreReasons": [
         "MACDが上向き（シグナル線を上抜け中）"
       ]
@@ -655,17 +655,16 @@
       "ticker": "4502.T",
       "name": "武田薬品工業",
       "sector": "医薬品",
-      "price": 6379.0,
-      "prevClose": 6407.0,
-      "changePct": -0.44,
-      "volume": 726600,
-      "ma25": 6004.9,
-      "ma75": 5692.5,
+      "price": 6386.0,
+      "prevClose": 6307.0,
+      "changePct": 1.25,
+      "volume": 1811900,
+      "ma25": 6022.8,
+      "ma75": 5705.2,
       "trend": "上昇トレンド(短期>長期)",
       "peRatio": null,
-      "dividendYield": 3.16,
+      "dividendYield": 3.18,
       "history": [
-        5568.5,
         5638.3,
         5746.4,
         5746.4,
@@ -694,39 +693,38 @@
         6389.0,
         6452.0,
         6407.0,
-        6379.0
+        6307.0,
+        6386.0
       ],
       "matched": false,
       "matchReasons": [
-        "配当利回り 3.16% >= 2.0%",
+        "配当利回り 3.18% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 71.1,
-      "macdHist": 30.49,
-      "bbPct": 0.777,
-      "buyScore": 55,
+      "rsi14": 68.4,
+      "macdHist": 19.13,
+      "bbPct": 0.762,
+      "buyScore": 56,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "RSI 71（買われすぎ圏に注意）",
         "MACDが上向き（シグナル線を上抜け中）",
-        "配当利回り 3.16%"
+        "配当利回り 3.18%"
       ]
     },
     {
       "ticker": "4568.T",
       "name": "第一三共",
       "sector": "医薬品",
-      "price": 2620.5,
-      "prevClose": 2594.5,
-      "changePct": 1.0,
-      "volume": 3228100,
-      "ma25": 2744.5,
-      "ma75": 2731.3,
+      "price": 2591.5,
+      "prevClose": 2580.0,
+      "changePct": 0.45,
+      "volume": 3001100,
+      "ma25": 2730.5,
+      "ma75": 2729.7,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 19.8,
-      "dividendYield": 3.54,
+      "peRatio": 19.6,
+      "dividendYield": 3.85,
       "history": [
-        2723.0,
         2795.2,
         2786.4,
         2788.8,
@@ -755,39 +753,39 @@
         2817.5,
         2825.0,
         2594.5,
-        2620.5
+        2580.0,
+        2591.5
       ],
       "matched": true,
       "matchReasons": [
-        "PER 19.8 <= 20.0",
-        "配当利回り 3.54% >= 2.0%",
+        "PER 19.6 <= 20.0",
+        "配当利回り 3.85% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 40.5,
-      "macdHist": -7.35,
-      "bbPct": 0.198,
-      "buyScore": 57,
+      "rsi14": 38.4,
+      "macdHist": -15.48,
+      "bbPct": 0.17,
+      "buyScore": 60,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
         "ボリンジャーバンド下限付近",
-        "配当利回り 3.54%"
+        "配当利回り 3.85%"
       ]
     },
     {
       "ticker": "5020.T",
       "name": "ENEOSホールディングス",
       "sector": "エネルギー",
-      "price": 1441.0,
-      "prevClose": 1459.5,
-      "changePct": -1.27,
-      "volume": 3052100,
-      "ma25": 1399.2,
-      "ma75": 1341.4,
+      "price": 1433.5,
+      "prevClose": 1429.5,
+      "changePct": 0.28,
+      "volume": 3356800,
+      "ma25": 1399.5,
+      "ma75": 1344.0,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 5.7,
-      "dividendYield": 2.32,
+      "peRatio": 5.6,
+      "dividendYield": 2.33,
       "history": [
-        1423.9,
         1420.9,
         1387.3,
         1456.5,
@@ -816,40 +814,39 @@
         1418.0,
         1466.5,
         1459.5,
-        1441.0
+        1429.5,
+        1433.5
       ],
       "matched": true,
       "matchReasons": [
-        "PER 5.7 <= 20.0",
-        "配当利回り 2.32% >= 2.0%",
+        "PER 5.6 <= 20.0",
+        "配当利回り 2.33% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 57.7,
-      "macdHist": 5.13,
-      "bbPct": 0.814,
-      "buyScore": 63,
+      "rsi14": 56.0,
+      "macdHist": 3.16,
+      "bbPct": 0.745,
+      "buyScore": 65,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
         "MACDが上向き（シグナル線を上抜け中）",
-        "ボリンジャーバンド上限付近に注意",
-        "PER 5.7倍（割安水準）"
+        "PER 5.6倍（割安水準）"
       ]
     },
     {
       "ticker": "4063.T",
       "name": "信越化学工業",
       "sector": "化学",
-      "price": 5999.0,
-      "prevClose": 5850.0,
-      "changePct": 2.55,
-      "volume": 5088400,
-      "ma25": 5970.7,
-      "ma75": 6154.8,
+      "price": 5972.0,
+      "prevClose": 6004.0,
+      "changePct": -0.53,
+      "volume": 3426100,
+      "ma25": 5976.8,
+      "ma75": 6142.6,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 23.5,
-      "dividendYield": 2.01,
+      "peRatio": 23.0,
+      "dividendYield": 1.98,
       "history": [
-        5718.3,
         5730.2,
         5673.4,
         5800.0,
@@ -878,16 +875,15 @@
         5826.0,
         5783.0,
         5850.0,
-        5999.0
+        6004.0,
+        5972.0
       ],
       "matched": false,
-      "matchReasons": [
-        "配当利回り 2.01% >= 2.0%"
-      ],
-      "rsi14": 52.5,
-      "macdHist": -12.89,
-      "bbPct": 0.486,
-      "buyScore": 26,
+      "matchReasons": [],
+      "rsi14": 51.0,
+      "macdHist": -5.02,
+      "bbPct": 0.439,
+      "buyScore": 27,
       "scoreReasons": [
         "突出した根拠はなく、各指標とも中庸"
       ]
@@ -896,17 +892,16 @@
       "ticker": "8058.T",
       "name": "三菱商事",
       "sector": "総合商社",
-      "price": 4914.0,
-      "prevClose": 4936.0,
-      "changePct": -0.45,
-      "volume": 1718000,
-      "ma25": 4745.7,
-      "ma75": 4727.9,
+      "price": 4828.0,
+      "prevClose": 4847.0,
+      "changePct": -0.39,
+      "volume": 3175400,
+      "ma25": 4740.8,
+      "ma75": 4732.6,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 20.4,
-      "dividendYield": 2.57,
+      "peRatio": 20.5,
+      "dividendYield": 2.55,
       "history": [
-        4940.6,
         4926.8,
         4846.8,
         4880.4,
@@ -935,38 +930,37 @@
         4715.0,
         4910.0,
         4936.0,
-        4914.0
+        4847.0,
+        4828.0
       ],
       "matched": false,
       "matchReasons": [
-        "配当利回り 2.57% >= 2.0%",
+        "配当利回り 2.55% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 58.6,
-      "macdHist": 27.8,
-      "bbPct": 0.969,
-      "buyScore": 54,
+      "rsi14": 53.3,
+      "macdHist": 19.64,
+      "bbPct": 0.746,
+      "buyScore": 60,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "MACDが上向き（シグナル線を上抜け中）",
-        "ボリンジャーバンド上限付近に注意"
+        "MACDが上向き（シグナル線を上抜け中）"
       ]
     },
     {
       "ticker": "8031.T",
       "name": "三井物産",
       "sector": "総合商社",
-      "price": 5105.0,
-      "prevClose": 5107.0,
-      "changePct": -0.04,
-      "volume": 1346700,
-      "ma25": 4954.1,
-      "ma75": 4882.7,
+      "price": 5009.0,
+      "prevClose": 5042.0,
+      "changePct": -0.65,
+      "volume": 2006400,
+      "ma25": 4948.4,
+      "ma75": 4887.4,
       "trend": "上昇トレンド(短期>長期)",
       "peRatio": 15.5,
       "dividendYield": 2.55,
       "history": [
-        4989.5,
         5092.0,
         4998.3,
         5101.9,
@@ -995,7 +989,8 @@
         4942.0,
         5089.0,
         5107.0,
-        5105.0
+        5042.0,
+        5009.0
       ],
       "matched": true,
       "matchReasons": [
@@ -1003,31 +998,29 @@
         "配当利回り 2.55% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 59.1,
-      "macdHist": 20.26,
-      "bbPct": 0.933,
-      "buyScore": 56,
+      "rsi14": 52.4,
+      "macdHist": 11.98,
+      "bbPct": 0.668,
+      "buyScore": 64,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "MACDが上向き（シグナル線を上抜け中）",
-        "ボリンジャーバンド上限付近に注意"
+        "MACDが上向き（シグナル線を上抜け中）"
       ]
     },
     {
       "ticker": "7974.T",
       "name": "任天堂",
       "sector": "ゲーム",
-      "price": 8352.0,
-      "prevClose": 8453.0,
-      "changePct": -1.19,
-      "volume": 2344700,
-      "ma25": 8212.2,
-      "ma75": 8114.3,
+      "price": 8181.0,
+      "prevClose": 8311.0,
+      "changePct": -1.56,
+      "volume": 4204300,
+      "ma25": 8204.2,
+      "ma75": 8128.3,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 20.7,
-      "dividendYield": 2.55,
+      "peRatio": 20.3,
+      "dividendYield": 2.59,
       "history": [
-        8093.0,
         8268.0,
         8118.0,
         8126.0,
@@ -1056,37 +1049,36 @@
         8539.0,
         8576.0,
         8453.0,
-        8352.0
+        8311.0,
+        8181.0
       ],
       "matched": false,
       "matchReasons": [
-        "配当利回り 2.55% >= 2.0%",
+        "配当利回り 2.59% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 50.5,
-      "macdHist": 26.01,
-      "bbPct": 0.584,
-      "buyScore": 63,
+      "rsi14": 45.1,
+      "macdHist": -1.94,
+      "bbPct": 0.449,
+      "buyScore": 48,
       "scoreReasons": [
-        "中長期トレンド上昇（MA25>MA75）",
-        "MACDが上向き（シグナル線を上抜け中）"
+        "中長期トレンド上昇（MA25>MA75）"
       ]
     },
     {
       "ticker": "2914.T",
       "name": "日本たばこ産業",
       "sector": "食品・たばこ",
-      "price": 7399.0,
-      "prevClose": 7504.0,
-      "changePct": -1.4,
-      "volume": 1207600,
-      "ma25": 7193.0,
-      "ma75": 6888.7,
+      "price": 7384.0,
+      "prevClose": 7332.0,
+      "changePct": 0.71,
+      "volume": 1985500,
+      "ma25": 7210.2,
+      "ma75": 6903.6,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 21.8,
-      "dividendYield": 3.58,
+      "peRatio": 22.0,
+      "dividendYield": 3.62,
       "history": [
-        6693.0,
         6763.0,
         6780.0,
         6773.0,
@@ -1115,38 +1107,37 @@
         7539.0,
         7599.0,
         7504.0,
-        7399.0
+        7332.0,
+        7384.0
       ],
       "matched": false,
       "matchReasons": [
-        "配当利回り 3.58% >= 2.0%",
+        "配当利回り 3.62% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 59.3,
-      "macdHist": 4.78,
-      "bbPct": 0.619,
-      "buyScore": 61,
+      "rsi14": 57.7,
+      "macdHist": -10.46,
+      "bbPct": 0.593,
+      "buyScore": 42,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "MACDが上向き（シグナル線を上抜け中）",
-        "配当利回り 3.58%"
+        "配当利回り 3.62%"
       ]
     },
     {
       "ticker": "9201.T",
       "name": "日本航空",
       "sector": "航空",
-      "price": 2976.5,
-      "prevClose": 2956.0,
-      "changePct": 0.69,
-      "volume": 466300,
-      "ma25": 2992.8,
-      "ma75": 2956.3,
+      "price": 2947.0,
+      "prevClose": 2945.5,
+      "changePct": 0.05,
+      "volume": 659600,
+      "ma25": 2988.8,
+      "ma75": 2955.3,
       "trend": "上昇トレンド(短期>長期)",
-      "peRatio": 11.7,
-      "dividendYield": 3.26,
+      "peRatio": 11.6,
+      "dividendYield": 3.25,
       "history": [
-        2918.3,
         2947.9,
         2964.6,
         2957.7,
@@ -1175,39 +1166,39 @@
         2972.0,
         2947.0,
         2956.0,
-        2976.5
+        2945.5,
+        2947.0
       ],
       "matched": true,
       "matchReasons": [
-        "PER 11.7 <= 20.0",
-        "配当利回り 3.26% >= 2.0%",
+        "PER 11.6 <= 20.0",
+        "配当利回り 3.25% >= 2.0%",
         "トレンド一致: 上昇トレンド(短期>長期)"
       ],
-      "rsi14": 50.5,
-      "macdHist": -2.27,
-      "bbPct": 0.464,
-      "buyScore": 52,
+      "rsi14": 45.8,
+      "macdHist": -3.83,
+      "bbPct": 0.298,
+      "buyScore": 57,
       "scoreReasons": [
         "中長期トレンド上昇（MA25>MA75）",
-        "PER 11.7倍（割安水準）",
-        "配当利回り 3.26%"
+        "PER 11.6倍（割安水準）",
+        "配当利回り 3.25%"
       ]
     },
     {
       "ticker": "8801.T",
       "name": "三井不動産",
       "sector": "不動産",
-      "price": 1582.5,
-      "prevClose": 1578.0,
-      "changePct": 0.29,
-      "volume": 1786800,
-      "ma25": 1489.5,
-      "ma75": 1494.0,
+      "price": 1568.5,
+      "prevClose": 1552.5,
+      "changePct": 1.03,
+      "volume": 3837800,
+      "ma25": 1492.4,
+      "ma75": 1494.2,
       "trend": "下降トレンド(短期<長期)",
-      "peRatio": 19.5,
-      "dividendYield": 2.26,
+      "peRatio": 18.9,
+      "dividendYield": 2.34,
       "history": [
-        1472.5,
         1477.4,
         1453.2,
         1455.2,
@@ -1236,20 +1227,20 @@
         1582.0,
         1637.5,
         1578.0,
-        1582.5
+        1552.5,
+        1568.5
       ],
       "matched": false,
       "matchReasons": [
-        "PER 19.5 <= 20.0",
-        "配当利回り 2.26% >= 2.0%"
+        "PER 18.9 <= 20.0",
+        "配当利回り 2.34% >= 2.0%"
       ],
-      "rsi14": 63.3,
-      "macdHist": 14.71,
-      "bbPct": 0.825,
-      "buyScore": 38,
+      "rsi14": 59.8,
+      "macdHist": 10.34,
+      "bbPct": 0.761,
+      "buyScore": 41,
       "scoreReasons": [
-        "MACDが上向き（シグナル線を上抜け中）",
-        "ボリンジャーバンド上限付近に注意"
+        "MACDが上向き（シグナル線を上抜け中）"
       ]
     }
   ],
