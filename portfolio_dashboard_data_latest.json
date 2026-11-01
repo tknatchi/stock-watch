@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T05:03",
+  "generatedAt": "2026-11-02T08:00",
   "minScore": 45,
   "maxWeight": 0.15,
   "cash": 51890.0,
@@ -167,6 +167,12 @@
       "cash": 51890.0,
       "holdingsValue": 244587.0,
       "totalValue": 296478.0
+    },
+    {
+      "date": "2026-10-31",
+      "cash": 51890.0,
+      "holdingsValue": 247937.0,
+      "totalValue": 299828.0
     }
   ],
   "holdings": [
@@ -179,7 +185,7 @@
       "changePct": -2.08,
       "value": 21741.0,
       "weight": 0.0725,
-      "targetWeight": 0.0628,
+      "targetWeight": 0.063,
       "buyScore": 49
     },
     {
@@ -203,8 +209,8 @@
       "changePct": 1.99,
       "value": 19148.0,
       "weight": 0.0639,
-      "targetWeight": 0.0731,
-      "buyScore": 57
+      "targetWeight": 0.072,
+      "buyScore": 56
     },
     {
       "ticker": "5020.T",
@@ -215,7 +221,7 @@
       "changePct": -0.97,
       "value": 18544.0,
       "weight": 0.0619,
-      "targetWeight": 0.0859,
+      "targetWeight": 0.0861,
       "buyScore": 67
     },
     {
@@ -227,7 +233,7 @@
       "changePct": -0.23,
       "value": 18420.0,
       "weight": 0.0614,
-      "targetWeight": 0.0872,
+      "targetWeight": 0.0874,
       "buyScore": 68
     },
     {
@@ -239,7 +245,7 @@
       "changePct": 1.18,
       "value": 17391.0,
       "weight": 0.058,
-      "targetWeight": 0.0705,
+      "targetWeight": 0.0707,
       "buyScore": 55
     },
     {
@@ -251,7 +257,7 @@
       "changePct": -0.49,
       "value": 17235.0,
       "weight": 0.0575,
-      "targetWeight": 0.0705,
+      "targetWeight": 0.0707,
       "buyScore": 55
     },
     {
@@ -263,7 +269,7 @@
       "changePct": 2.11,
       "value": 17019.0,
       "weight": 0.0568,
-      "targetWeight": 0.0731,
+      "targetWeight": 0.0733,
       "buyScore": 57
     },
     {
@@ -276,7 +282,7 @@
       "value": 16524.0,
       "weight": 0.0551,
       "targetWeight": 0.0,
-      "buyScore": 31
+      "buyScore": 30
     },
     {
       "ticker": "6758.T",
@@ -299,7 +305,7 @@
       "changePct": 3.94,
       "value": 15450.0,
       "weight": 0.0515,
-      "targetWeight": 0.0718,
+      "targetWeight": 0.072,
       "buyScore": 56
     },
     {
@@ -311,7 +317,7 @@
       "changePct": -1.8,
       "value": 15018.0,
       "weight": 0.0501,
-      "targetWeight": 0.0833,
+      "targetWeight": 0.0835,
       "buyScore": 65
     },
     {
@@ -323,7 +329,7 @@
       "changePct": -2.1,
       "value": 14415.0,
       "weight": 0.0481,
-      "targetWeight": 0.0795,
+      "targetWeight": 0.0797,
       "buyScore": 62
     },
     {
@@ -335,8 +341,8 @@
       "changePct": 2.78,
       "value": 13302.0,
       "weight": 0.0444,
-      "targetWeight": 0.059,
-      "buyScore": 46
+      "targetWeight": 0.0578,
+      "buyScore": 45
     },
     {
       "ticker": "8316.T",
@@ -359,7 +365,7 @@
       "changePct": -0.73,
       "value": 0.0,
       "weight": 0.0,
-      "targetWeight": 0.0603,
+      "targetWeight": 0.0604,
       "buyScore": 47
     },
     {
@@ -371,7 +377,7 @@
       "changePct": 1.61,
       "value": 0.0,
       "weight": 0.0,
-      "targetWeight": 0.059,
+      "targetWeight": 0.0591,
       "buyScore": 46
     },
     {
@@ -383,13 +389,13 @@
       "changePct": 1.05,
       "value": 0.0,
       "weight": 0.0,
-      "targetWeight": 0.0641,
+      "targetWeight": 0.0643,
       "buyScore": 50
     }
   ],
   "auto": {
-    "cash": 27040.0,
-    "holdingsValue": 278162.0,
+    "cash": 25765.0,
+    "holdingsValue": 279437.0,
     "totalValue": 305202.0,
     "history": [
       {
@@ -553,6 +559,12 @@
         "cash": 27040.0,
         "holdingsValue": 274027.0,
         "totalValue": 301067.0
+      },
+      {
+        "date": "2026-10-31",
+        "cash": 25765.0,
+        "holdingsValue": 279437.0,
+        "totalValue": 305202.0
       }
     ],
     "holdings": [
@@ -565,7 +577,7 @@
         "changePct": -0.97,
         "value": 25677.0,
         "weight": 0.0841,
-        "targetWeight": 0.0859,
+        "targetWeight": 0.0861,
         "buyScore": 67
       },
       {
@@ -577,7 +589,7 @@
         "changePct": 1.61,
         "value": 24867.0,
         "weight": 0.0815,
-        "targetWeight": 0.059,
+        "targetWeight": 0.0591,
         "buyScore": 46
       },
       {
@@ -589,7 +601,7 @@
         "changePct": -0.23,
         "value": 24560.0,
         "weight": 0.0805,
-        "targetWeight": 0.0872,
+        "targetWeight": 0.0874,
         "buyScore": 68
       },
       {
@@ -601,7 +613,7 @@
         "changePct": 2.11,
         "value": 22692.0,
         "weight": 0.0744,
-        "targetWeight": 0.0731,
+        "targetWeight": 0.0733,
         "buyScore": 57
       },
       {
@@ -613,7 +625,7 @@
         "changePct": -2.08,
         "value": 21741.0,
         "weight": 0.0712,
-        "targetWeight": 0.0628,
+        "targetWeight": 0.063,
         "buyScore": 49
       },
       {
@@ -625,8 +637,20 @@
         "changePct": 3.94,
         "value": 21630.0,
         "weight": 0.0709,
-        "targetWeight": 0.0718,
+        "targetWeight": 0.072,
         "buyScore": 56
+      },
+      {
+        "ticker": "8801.T",
+        "name": "三井不動産",
+        "sector": "不動産",
+        "shares": 13,
+        "price": 1581.0,
+        "changePct": 1.18,
+        "value": 20553.0,
+        "weight": 0.0673,
+        "targetWeight": 0.0707,
+        "buyScore": 55
       },
       {
         "ticker": "8031.T",
@@ -637,7 +661,7 @@
         "changePct": -1.8,
         "value": 20024.0,
         "weight": 0.0656,
-        "targetWeight": 0.0833,
+        "targetWeight": 0.0835,
         "buyScore": 65
       },
       {
@@ -649,8 +673,8 @@
         "changePct": 2.78,
         "value": 19953.0,
         "weight": 0.0654,
-        "targetWeight": 0.059,
-        "buyScore": 46
+        "targetWeight": 0.0578,
+        "buyScore": 45
       },
       {
         "ticker": "6758.T",
@@ -673,20 +697,8 @@
         "changePct": 1.05,
         "value": 19583.0,
         "weight": 0.0642,
-        "targetWeight": 0.0641,
+        "targetWeight": 0.0643,
         "buyScore": 50
-      },
-      {
-        "ticker": "4568.T",
-        "name": "第一三共",
-        "sector": "医薬品",
-        "shares": 7,
-        "price": 2754.0,
-        "changePct": 5.21,
-        "value": 19278.0,
-        "weight": 0.0632,
-        "targetWeight": 0.0,
-        "buyScore": 31
       },
       {
         "ticker": "8058.T",
@@ -697,7 +709,7 @@
         "changePct": -2.1,
         "value": 19220.0,
         "weight": 0.063,
-        "targetWeight": 0.0795,
+        "targetWeight": 0.0797,
         "buyScore": 62
       },
       {
@@ -709,8 +721,8 @@
         "changePct": 1.99,
         "value": 19148.0,
         "weight": 0.0627,
-        "targetWeight": 0.0731,
-        "buyScore": 57
+        "targetWeight": 0.072,
+        "buyScore": 56
       },
       {
         "ticker": "4063.T",
@@ -721,7 +733,7 @@
         "changePct": -0.73,
         "value": 0.0,
         "weight": 0.0,
-        "targetWeight": 0.0603,
+        "targetWeight": 0.0604,
         "buyScore": 47
       },
       {
@@ -733,19 +745,7 @@
         "changePct": -0.49,
         "value": 0.0,
         "weight": 0.0,
-        "targetWeight": 0.0705,
-        "buyScore": 55
-      },
-      {
-        "ticker": "8801.T",
-        "name": "三井不動産",
-        "sector": "不動産",
-        "shares": 0,
-        "price": 1581.0,
-        "changePct": 1.18,
-        "value": 0.0,
-        "weight": 0.0,
-        "targetWeight": 0.0705,
+        "targetWeight": 0.0707,
         "buyScore": 55
       }
     ]
@@ -861,6 +861,10 @@
       {
         "date": "2026-10-29",
         "totalValue": 303583.0
+      },
+      {
+        "date": "2026-10-31",
+        "totalValue": 300693.0
       }
     ]
   }
